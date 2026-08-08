@@ -1,7 +1,7 @@
 "use client";
 import styles from "./page.module.css";
 import React, { useState } from "react";
-import { PageHeader, DataTable } from "@unerp/ui";
+import { PageHeader, DataTable } from "@kannan19302/ui";
 import { Cpu, Plus, Code2, Trash2 } from "lucide-react";
 import { useBuilderData } from "@/lib/hooks/useBuilderData";
 

@@ -2,7 +2,7 @@
 import styles from "./page.module.css";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { RouteGuard, useApiClient } from "@unerp/framework";
+import { RouteGuard, useApiClient } from "@kannan19302/framework";
 
 export default function NewDashboardPage() {
   const router = useRouter();

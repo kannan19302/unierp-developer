@@ -1,5 +1,5 @@
 {
-  "extends": "@unerp/config/typescript/nextjs.json",
+  "extends": "@kannan19302/config/typescript/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

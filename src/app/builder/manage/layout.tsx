@@ -1,5 +1,5 @@
 import React from "react";
-import { SubTabBar } from "@unerp/ui/layout";
+import { SubTabBar } from "@kannan19302/ui/layout";
 import { MANAGE_SUB_TABS } from "@/components/builder/manage-sub-tabs";
 
 /**

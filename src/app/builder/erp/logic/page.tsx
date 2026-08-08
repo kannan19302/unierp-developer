@@ -4,9 +4,9 @@ import { GenericBuilderModal } from "@/components/builder/GenericBuilderModal";
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PageHeader, ConfirmDialog, useToast } from "@unerp/ui";
-import { SubTabBar } from "@unerp/ui/layout";
-import { useApiClient } from "@unerp/framework";
+import { PageHeader, ConfirmDialog, useToast } from "@kannan19302/ui";
+import { SubTabBar } from "@kannan19302/ui/layout";
+import { useApiClient } from "@kannan19302/framework";
 import {
   Zap,
   PlusCircle,

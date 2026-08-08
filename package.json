@@ -1,5 +1,5 @@
 {
-  "name": "@unerp/developer",
+  "name": "@kannan19302/developer",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -13,15 +13,15 @@
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@unerp/ui": "^1.0.15",
-    "@unerp/framework": "^0.1.4",
-    "@unerp/shared": "^1.0.5",
-    "@unerp/sdk": "^1.0.3"
+    "@kannan19302/ui": "^1.0.15",
+    "@kannan19302/framework": "^0.1.4",
+    "@kannan19302/shared": "^1.0.5",
+    "@kannan19302/sdk": "^1.0.3"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
     "@types/react": "^19.0.0",
     "@types/node": "^22.0.0",
-    "@unerp/config": "^1.0.2"
+    "@kannan19302/config": "^1.0.2"
   }
 }

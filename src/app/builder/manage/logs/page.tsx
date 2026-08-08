@@ -1,9 +1,9 @@
 "use client";
 import styles from "./page.module.css";
 import React, { useState, useEffect, useCallback } from "react";
-import { PageHeader, DataTable } from "@unerp/ui";
+import { PageHeader, DataTable } from "@kannan19302/ui";
 import { Activity, Search, RefreshCw } from "lucide-react";
-import { RouteGuard, useApiClient } from "@unerp/framework";
+import { RouteGuard, useApiClient } from "@kannan19302/framework";
 
 interface RunLog {
   level: string;

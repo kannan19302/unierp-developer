@@ -1,7 +1,7 @@
 "use client";
 import styles from "./page.module.css";
 import React, { useState, useEffect } from "react";
-import { PageHeader, DataTable } from "@unerp/ui";
+import { PageHeader, DataTable } from "@kannan19302/ui";
 import {
   GitPullRequest,
   GitCommit,
@@ -9,7 +9,7 @@ import {
   Save,
   AlertCircle,
 } from "lucide-react";
-import { useApiClient } from "@unerp/framework";
+import { useApiClient } from "@kannan19302/framework";
 
 export default function GitIntegrationPage() {
   const client = useApiClient();

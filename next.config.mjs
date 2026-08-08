@@ -10,12 +10,12 @@ const nextConfig = {
   // Transpiled, not externalised: a server-external package resolves its own
   // React, which breaks prerendering with a null dispatcher, and Next cannot
   // process CSS modules it does not own.
-  transpilePackages: ['@unerp/shared', '@unerp/ui', '@unerp/framework'],
+  transpilePackages: ['@kannan19302/shared', '@kannan19302/ui', '@kannan19302/framework'],
 
   experimental: {
     // Meant for large third-party barrel packages. Applying it to a local
     // workspace package alongside transpilePackages produced duplicate module
-    // instances and null-hook crashes in web; do not add @unerp/* here.
+    // instances and null-hook crashes in web; do not add @kannan19302/* here.
     optimizePackageImports: ['lucide-react'],
   },
 

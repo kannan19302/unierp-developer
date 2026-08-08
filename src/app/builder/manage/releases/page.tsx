@@ -1,7 +1,7 @@
 "use client";
 import styles from "./page.module.css";
 import React, { useState, useEffect, useCallback } from "react";
-import { PageHeader, DataTable, ConfirmDialog } from "@unerp/ui";
+import { PageHeader, DataTable, ConfirmDialog } from "@kannan19302/ui";
 import {
   History,
   ArrowLeftRight,
@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   Cpu,
 } from "lucide-react";
-import { useApiClient } from "@unerp/framework";
+import { useApiClient } from "@kannan19302/framework";
 
 export default function ReleasesPage() {
   const client = useApiClient();

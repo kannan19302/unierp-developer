@@ -8,7 +8,7 @@ import {
   StatCardRow,
   ListPageTemplate,
   type ListColumn,
-} from "@unerp/ui";
+} from "@kannan19302/ui";
 import {
   ShoppingCart,
   Package,
@@ -17,7 +17,7 @@ import {
   Trash2,
   Search,
 } from "lucide-react";
-import { RouteGuard, useApiClient } from "@unerp/framework";
+import { RouteGuard, useApiClient } from "@kannan19302/framework";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   PENDING: {

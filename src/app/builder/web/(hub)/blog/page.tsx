@@ -11,7 +11,7 @@ import {
   StatCardRow,
   ListPageTemplate,
   type ListColumn,
-} from "@unerp/ui";
+} from "@kannan19302/ui";
 import {
   FileText,
   PlusCircle,

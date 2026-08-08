@@ -2,8 +2,8 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, ConfirmDialog } from "@unerp/ui";
-import { useApiClient } from "@unerp/framework";
+import { PageHeader, ConfirmDialog } from "@kannan19302/ui";
+import { useApiClient } from "@kannan19302/framework";
 import {
   GitFork,
   PlusCircle,

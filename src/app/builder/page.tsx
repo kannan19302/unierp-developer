@@ -2,8 +2,8 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, KPICard, Badge, EmptyState } from "@unerp/ui";
-import { useApiClient } from "@unerp/framework";
+import { PageHeader, KPICard, Badge, EmptyState } from "@kannan19302/ui";
+import { useApiClient } from "@kannan19302/framework";
 import {
   Cpu,
   Globe,

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 export const dynamic = "force-dynamic";
-import "@unerp/ui/styles";
-import { ThemeProvider, ToastProvider } from "@unerp/ui";
+import "@kannan19302/ui/styles";
+import { ThemeProvider, ToastProvider } from "@kannan19302/ui";
 
 const inter = Inter({
   subsets: ["latin"],

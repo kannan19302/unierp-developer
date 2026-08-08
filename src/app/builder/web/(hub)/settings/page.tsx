@@ -2,8 +2,8 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { PageHeader } from "@unerp/ui";
-import { SubTabBar } from "@unerp/ui/layout";
+import { PageHeader } from "@kannan19302/ui";
+import { SubTabBar } from "@kannan19302/ui/layout";
 import {
   Settings,
   Save,
@@ -13,7 +13,7 @@ import {
   Globe,
   Eye,
 } from "lucide-react";
-import { useApiClient } from "@unerp/framework";
+import { useApiClient } from "@kannan19302/framework";
 
 const SETTINGS_SUB_TABS = [
   {

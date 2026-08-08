@@ -1,4 +1,4 @@
-import { Spinner } from "@unerp/ui";
+import { Spinner } from "@kannan19302/ui";
 
 export default function LoadingPage() {
   return (

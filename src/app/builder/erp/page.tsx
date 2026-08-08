@@ -2,8 +2,8 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PageHeader, ConfirmDialog } from "@unerp/ui";
-import { useApiClient } from "@unerp/framework";
+import { PageHeader, ConfirmDialog } from "@kannan19302/ui";
+import { useApiClient } from "@kannan19302/framework";
 import {
   Plus,
   Search,

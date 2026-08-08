@@ -7,8 +7,8 @@ import {
   ConfirmDialog,
   ListPageTemplate,
   type ListColumn,
-} from "@unerp/ui";
-import { useApiClient } from "@unerp/framework";
+} from "@kannan19302/ui";
+import { useApiClient } from "@kannan19302/framework";
 import {
   Database,
   Plus,

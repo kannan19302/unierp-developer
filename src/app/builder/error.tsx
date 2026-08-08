@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Button } from "@unerp/ui";
+import { Card, Button } from "@kannan19302/ui";
 import { AlertCircle } from "lucide-react";
 
 interface ErrorProps {

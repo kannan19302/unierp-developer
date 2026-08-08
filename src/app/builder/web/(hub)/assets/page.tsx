@@ -10,7 +10,7 @@ import {
   ConfirmDialog,
   ListPageTemplate,
   type ListColumn,
-} from "@unerp/ui";
+} from "@kannan19302/ui";
 import {
   Image,
   PlusCircle,

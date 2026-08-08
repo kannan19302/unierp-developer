@@ -1,9 +1,9 @@
 "use client";
 import styles from "./page.module.css";
 import React, { useState } from "react";
-import { PageHeader, DataTable } from "@unerp/ui";
+import { PageHeader, DataTable } from "@kannan19302/ui";
 import { Database, Play, Plus, Save, Terminal } from "lucide-react";
-import { RouteGuard, useApiClient } from "@unerp/framework";
+import { RouteGuard, useApiClient } from "@kannan19302/framework";
 
 export default function VisualQueryBuilderPage() {
   const client = useApiClient();

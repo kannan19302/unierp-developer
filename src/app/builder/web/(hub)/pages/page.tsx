@@ -2,8 +2,8 @@
 import styles from "./page.module.css";
 import { GenericBuilderModal } from "@/components/builder/GenericBuilderModal";
 import { useBuilderData } from "@/lib/hooks/useBuilderData";
-import { PageHeader, DataTable, ConfirmDialog, type Column } from "@unerp/ui";
-import { useApiClient } from "@unerp/framework";
+import { PageHeader, DataTable, ConfirmDialog, type Column } from "@kannan19302/ui";
+import { useApiClient } from "@kannan19302/framework";
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

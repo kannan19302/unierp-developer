@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import styles from "./page.module.css";
 import React, { useEffect, useMemo, useState } from "react";
 import { allApplications, getAppSpecificNavigation } from "@/navigation";
-import { PageHeader } from "@unerp/ui";
-import { useApiClient } from "@unerp/framework";
+import { PageHeader } from "@kannan19302/ui";
+import { useApiClient } from "@kannan19302/framework";
 import {
   Layers,
   Eye,

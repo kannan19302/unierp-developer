@@ -1,7 +1,7 @@
 "use client";
 import styles from "./page.module.css";
 import React, { useEffect, useState, use } from "react";
-import { useApiClient } from "@unerp/framework";
+import { useApiClient } from "@kannan19302/framework";
 import {
   ArrowLeft,
   Globe,

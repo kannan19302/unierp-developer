@@ -2,7 +2,7 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@unerp/ui";
+import { PageHeader } from "@kannan19302/ui";
 import {
   Globe,
   Monitor,
@@ -26,7 +26,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { RouteGuard, useApiClient } from "@unerp/framework";
+import { RouteGuard, useApiClient } from "@kannan19302/framework";
 interface WebStats {
   publishedPages: number;
   blogPosts: number;

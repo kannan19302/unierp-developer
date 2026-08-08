@@ -41,8 +41,8 @@ import {
   MonitorPlay,
   List as ListIcon,
 } from "lucide-react";
-import { PageHeader, ConfirmDialog } from "@unerp/ui";
-import { useApiClient, RouteGuard } from "@unerp/framework";
+import { PageHeader, ConfirmDialog } from "@kannan19302/ui";
+import { useApiClient, RouteGuard } from "@kannan19302/framework";
 import { DynamicFormRenderer } from "@/components/builder/DynamicFormRenderer";
 import { FormBuilderWorkspace } from "@/components/builder/FormBuilderWorkspace";
 import { PageBuilderWorkspace } from "@/components/builder/PageBuilderWorkspace";

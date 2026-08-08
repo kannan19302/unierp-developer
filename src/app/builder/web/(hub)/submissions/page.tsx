@@ -2,7 +2,7 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, ConfirmDialog } from "@unerp/ui";
+import { PageHeader, ConfirmDialog } from "@kannan19302/ui";
 import {
   Inbox,
   Trash2,
@@ -12,7 +12,7 @@ import {
   AlertOctagon,
   Search,
 } from "lucide-react";
-import { RouteGuard, useApiClient } from "@unerp/framework";
+import { RouteGuard, useApiClient } from "@kannan19302/framework";
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   NEW: { label: "New", color: "var(--color-primary)" },

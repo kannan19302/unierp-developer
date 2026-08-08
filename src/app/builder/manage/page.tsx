@@ -2,7 +2,7 @@
 import styles from "./page.module.css";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, Badge } from "@unerp/ui";
+import { PageHeader, Badge } from "@kannan19302/ui";
 import {
   History,
   GitFork,
