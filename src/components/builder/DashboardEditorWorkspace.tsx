@@ -510,7 +510,7 @@ export function DashboardEditorWorkspace({
                 cols={12}
                 rowHeight={40}
                 width={width - 48 - 32}
-                onLayoutChange={(l: Layout) => setLayout(l as any[])}
+                onLayoutChange={(l: Layout) => setLayout(l as unknown as any[])}
                 isDraggable
                 isResizable
                 margin={[16, 16]}
