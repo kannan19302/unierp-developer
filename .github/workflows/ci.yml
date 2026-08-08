@@ -6,15 +6,5 @@ on:
   pull_request:
 
 jobs:
-  static:
-    name: Static
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --no-audit --no-fund
-      - name: Typecheck
-        run: npx tsc --noEmit
-        if: hashFiles('tsconfig.json') != ''
+  layer-gate:
+    uses: kannan19302/unierp-workspace/.github/workflows/layer-gate.yml@main
