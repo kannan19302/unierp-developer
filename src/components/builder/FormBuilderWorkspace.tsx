@@ -25,6 +25,7 @@ import {
   Monitor,
   Sparkles,
   Rocket,
+  GitBranch,
   X,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ import { BuilderProperties } from "@/components/builder/BuilderProperties";
 import { SortableField } from "@/components/builder/SortableField";
 import { DeployFormModal } from "@/components/builder/DeployFormModal";
 import { AiCopilotSidebar } from "@/components/builder/AiCopilotSidebar";
+import { FormLogicModal } from "@/components/builder/FormLogicModal";
 
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -69,6 +71,10 @@ export function FormBuilderWorkspace({
   const {
     fields,
     setFields,
+    pages,
+    setPages,
+    conditions,
+    setConditions,
     selectedFieldId,
     setSelectedFieldId,
     previewMode,
@@ -78,6 +84,7 @@ export function FormBuilderWorkspace({
   const [currentId, setCurrentId] = useState(formId);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showLogicModal, setShowLogicModal] = useState(false);
   const [deploySettings, setDeploySettings] = useState({
     module: defaultModule || "",
     slug: "",
@@ -124,6 +131,8 @@ export function FormBuilderWorkspace({
             columnSpan: 12,
           },
         ]);
+        setPages([]);
+        setConditions([]);
         useBuilderStore.getState().updateFormSettings({});
         setDeploySettings({
           module: defaultModule || "Sales",
@@ -150,6 +159,8 @@ export function FormBuilderWorkspace({
             }
           }
           if (Array.isArray(rawFields)) setFields(rawFields);
+          setPages(Array.isArray(data.pages) ? data.pages : []);
+          setConditions(Array.isArray(data.conditions) ? data.conditions : []);
           let rawSettings = data.settings || {};
           if (typeof rawSettings === "string") {
             try {
@@ -216,6 +227,8 @@ export function FormBuilderWorkspace({
         slug,
         name: title,
         fields,
+        pages,
+        conditions,
         settings: formSettings,
         status: publish ? "PUBLISHED" : "DRAFT",
       };
@@ -503,6 +516,36 @@ export function FormBuilderWorkspace({
           >
             <Eye size={14} />{" "}
             <span>{previewMode ? "Build Mode" : "Preview Mode"}</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowLogicModal(true);
+            }}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "var(--radius-md)",
+              background:
+                pages.length > 0 || conditions.length > 0
+                  ? "rgba(59, 130, 246, 0.2)"
+                  : "rgba(255,255,255,0.05)",
+              color: "white",
+              border: "1px solid rgba(255,255,255,0.1)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontWeight: "500",
+              fontSize: "13px",
+            }}
+          >
+            <GitBranch size={14} />{" "}
+            <span>
+              Steps &amp; Logic
+              {pages.length + conditions.length > 0
+                ? ` (${pages.length + conditions.length})`
+                : ""}
+            </span>
           </button>
           {!embedded && (
             <button
@@ -806,6 +849,11 @@ export function FormBuilderWorkspace({
           }}
         />
       )}
+
+      <FormLogicModal
+        isOpen={showLogicModal}
+        onClose={() => setShowLogicModal(false)}
+      />
     </div>
   );
 }

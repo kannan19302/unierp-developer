@@ -36,8 +36,36 @@ export interface FormField {
   dataFilter?: string;
 }
 
+/** G10 — one step of a multi-step form. Empty `pages` = single page. */
+export interface FormPage {
+  id: string;
+  title: string;
+  order: number;
+  fieldIds: string[];
+}
+
+export type ConditionOperator =
+  | "equals"
+  | "notEquals"
+  | "contains"
+  | "greaterThan"
+  | "lessThan"
+  | "isEmpty";
+export type ConditionAction = "show" | "hide" | "enable" | "disable" | "require";
+
+/** G10 — conditional visibility/requirement, evaluated against a live field value. */
+export interface FormCondition {
+  fieldId: string;
+  operator: ConditionOperator;
+  value?: string;
+  action: ConditionAction;
+  targetFieldId: string;
+}
+
 interface BuilderState {
   fields: FormField[];
+  pages: FormPage[];
+  conditions: FormCondition[];
   selectedFieldId: string | null;
   previewMode: boolean;
   formSettings: {
@@ -66,12 +94,28 @@ interface BuilderState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+
+  // G10 — pages (steps)
+  setPages: (pages: FormPage[]) => void;
+  addPage: (title: string) => void;
+  updatePage: (id: string, updates: Partial<FormPage>) => void;
+  removePage: (id: string) => void;
+  reorderPages: (fromIndex: number, toIndex: number) => void;
+  assignFieldToPage: (fieldId: string, pageId: string | null) => void;
+
+  // G10 — conditional logic
+  setConditions: (conditions: FormCondition[]) => void;
+  addCondition: (condition: FormCondition) => void;
+  updateCondition: (index: number, updates: Partial<FormCondition>) => void;
+  removeCondition: (index: number) => void;
 }
 
 const MAX_HISTORY = 20;
 
 export const useBuilderStore = create<BuilderState>((set, get) => ({
   fields: [],
+  pages: [],
+  conditions: [],
   selectedFieldId: null,
   previewMode: false,
   formSettings: { webhooks: [], scripts: [] },
@@ -183,4 +227,67 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
   canUndo: () => get().historyIndex > 0,
   canRedo: () => get().historyIndex < get().history.length - 1,
+
+  // ── G10 — pages (steps) ──
+  setPages: (pages) => set({ pages }),
+
+  addPage: (title) =>
+    set((state) => ({
+      pages: [
+        ...state.pages,
+        {
+          id: "p_" + Math.random().toString(36).substr(2, 9),
+          title,
+          order: state.pages.length,
+          fieldIds: [],
+        },
+      ],
+    })),
+
+  updatePage: (id, updates) =>
+    set((state) => ({
+      pages: state.pages.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    })),
+
+  removePage: (id) =>
+    set((state) => ({
+      pages: state.pages
+        .filter((p) => p.id !== id)
+        .map((p, i) => ({ ...p, order: i })),
+    })),
+
+  reorderPages: (fromIndex, toIndex) =>
+    set((state) => {
+      const reordered = arrayMove(state.pages, fromIndex, toIndex);
+      return { pages: reordered.map((p, i) => ({ ...p, order: i })) };
+    }),
+
+  assignFieldToPage: (fieldId, pageId) =>
+    set((state) => ({
+      pages: state.pages.map((p) => {
+        const withoutField = p.fieldIds.filter((id) => id !== fieldId);
+        return {
+          ...p,
+          fieldIds: p.id === pageId ? [...withoutField, fieldId] : withoutField,
+        };
+      }),
+    })),
+
+  // ── G10 — conditional logic ──
+  setConditions: (conditions) => set({ conditions }),
+
+  addCondition: (condition) =>
+    set((state) => ({ conditions: [...state.conditions, condition] })),
+
+  updateCondition: (index, updates) =>
+    set((state) => ({
+      conditions: state.conditions.map((c, i) =>
+        i === index ? { ...c, ...updates } : c,
+      ),
+    })),
+
+  removeCondition: (index) =>
+    set((state) => ({
+      conditions: state.conditions.filter((_, i) => i !== index),
+    })),
 }));
