@@ -1777,6 +1777,11 @@ export const getAppSpecificNavigation = (
             { name: "Business Logic", href: "/builder/erp/logic", icon: Play },
             { name: "Data & Import", href: "/builder/erp/data", icon: Layers },
             {
+              name: "Data Objects",
+              href: "/builder/erp/data-objects",
+              icon: Database,
+            },
+            {
               name: "Customize an App",
               href: "/builder/erp/customize",
               icon: Settings,

@@ -52,6 +52,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   apps: "Apps",
   logic: "Business Logic",
   data: "Data & Import",
+  "data-objects": "Data Objects",
   customize: "Customize",
   sites: "Sites",
   collections: "Collections",
