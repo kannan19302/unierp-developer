@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   ReactFlow,
@@ -35,6 +35,11 @@ import {
   Trash2,
   X,
   Sparkles,
+  Repeat,
+  Check,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/components/builder/ToastProvider";
 import { AiCopilotSidebar } from "@/components/builder/AiCopilotSidebar";
@@ -88,6 +93,12 @@ const NODE_TYPES = [
     label: "Webhook",
     icon: Link2,
     color: "var(--studio-pink)",
+  },
+  {
+    type: "loop",
+    label: "Loop",
+    icon: Repeat,
+    color: "var(--studio-cyan)",
   },
 ];
 
@@ -188,6 +199,7 @@ function WorkflowEditorInner({
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [showCopilot, setShowCopilot] = useState(false);
 
   useEffect(() => {
@@ -265,7 +277,12 @@ function WorkflowEditorInner({
     (params: Connection) =>
       setEdges((eds) =>
         addEdge(
-          { ...params, markerEnd: { type: MarkerType.ArrowClosed } },
+          {
+            ...params,
+            label: "",
+            data: { errorPath: false },
+            markerEnd: { type: MarkerType.ArrowClosed },
+          },
           eds,
         ),
       ),
@@ -314,8 +331,13 @@ function WorkflowEditorInner({
       if (params.nodes.length > 0)
         setSelectedNode(nodes.find((n) => n.id === params.nodes[0].id) || null);
       else setSelectedNode(null);
+      if (params.edges?.length > 0)
+        setSelectedEdge(
+          edges.find((e) => e.id === params.edges[0].id) || null,
+        );
+      else setSelectedEdge(null);
     },
-    [nodes],
+    [nodes, edges],
   );
 
   const handleClose = () => {
@@ -373,22 +395,127 @@ function WorkflowEditorInner({
     );
   };
 
+  const updateEdge = (patch: Partial<Edge>) => {
+    if (!selectedEdge) return;
+    setEdges((eds) =>
+      eds.map((e) => {
+        if (e.id === selectedEdge.id) {
+          const updated = { ...e, ...patch };
+          setSelectedEdge(updated);
+          return updated;
+        }
+        return e;
+      }),
+    );
+  };
+
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [executions, setExecutions] = useState<any[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [selectedRun, setSelectedRun] = useState<any | null>(null);
+  const [runSteps, setRunSteps] = useState<any[]>([]);
+  const [inspectingRun, setInspectingRun] = useState<string | null>(null);
+  const [runActionLoading, setRunActionLoading] = useState(false);
 
   const fetchExecutions = async () => {
     if (currentId === "new") return;
     try {
       const token = localStorage.getItem("token") || "";
       const res = await fetch(
-        `/api/v1/builder/workflows/${currentId}/executions`,
+        `/api/v1/builder/workflows/${currentId}/runs`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (res.ok) setExecutions(await res.json());
     } catch {
       /* ignore */
     }
+  };
+
+  const fetchRunDetail = async (runId: string) => {
+    if (currentId === "new") return;
+    setInspectingRun(runId);
+    setRunSteps([]);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(
+        `/api/v1/builder/workflows/${currentId}/runs/${runId}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedRun(data);
+        setRunSteps(Array.isArray(data.steps) ? data.steps : []);
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleResumeRun = async (runId: string) => {
+    if (currentId === "new") return;
+    setRunActionLoading(true);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(
+        `/api/v1/builder/workflows/${currentId}/runs/${runId}/resume`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ input: {} }),
+        },
+      );
+      if (res.ok) {
+        showToast("Run resumed", "success");
+        fetchExecutions();
+        await fetchRunDetail(runId);
+      } else showToast("Failed to resume run", "error");
+    } catch {
+      showToast("Network error resuming run", "error");
+    } finally {
+      setRunActionLoading(false);
+    }
+  };
+
+  const handleApproveStep = async (
+    runId: string,
+    stepId: string,
+    approved: boolean,
+  ) => {
+    if (currentId === "new") return;
+    setRunActionLoading(true);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(
+        `/api/v1/builder/workflows/${currentId}/runs/${runId}/steps/${stepId}/approve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ approved }),
+        },
+      );
+      if (res.ok) {
+        showToast(approved ? "Step approved" : "Step rejected", "success");
+        fetchExecutions();
+        await fetchRunDetail(runId);
+      } else showToast("Failed to update approval", "error");
+    } catch {
+      showToast("Network error updating approval", "error");
+    } finally {
+      setRunActionLoading(false);
+    }
+  };
+
+  const closeHistory = () => {
+    setIsHistoryModalOpen(false);
+    setSelectedRun(null);
+    setRunSteps([]);
+    setInspectingRun(null);
   };
 
   const handleTestRun = async () => {
@@ -406,6 +533,9 @@ function WorkflowEditorInner({
       if (res.ok) {
         showToast("Workflow triggered successfully", "success");
         fetchExecutions();
+        setSelectedRun(null);
+        setRunSteps([]);
+        setInspectingRun(null);
         setIsHistoryModalOpen(true);
       } else showToast("Failed to trigger workflow", "error");
     } catch {
@@ -414,6 +544,41 @@ function WorkflowEditorInner({
       setIsExecuting(false);
     }
   };
+
+  const getEdgeStyle = useCallback(
+    (edge: Edge) => {
+      const errorPath = edge.data?.errorPath === true;
+      return {
+        stroke: errorPath ? "var(--studio-danger-rose)" : "var(--studio-500)",
+        strokeWidth: errorPath ? 2 : 1.5,
+        strokeDasharray: errorPath ? "6 3" : undefined,
+      };
+    },
+    [],
+  );
+
+  const styledEdges = useMemo(
+    () =>
+      edges.map((e) => {
+        const errorPath = e.data?.errorPath === true;
+        const label = e.label || (errorPath ? "error" : "");
+        return {
+          ...e,
+          label,
+          labelStyle: {
+            fontSize: "11px",
+            fontWeight: 600,
+            fill: errorPath ? "var(--studio-danger-rose)" : "var(--studio-600)",
+          },
+          labelBgStyle: {
+            fill: "white",
+            fillOpacity: 0.9,
+          },
+          style: getEdgeStyle(e),
+        };
+      }),
+    [edges, getEdgeStyle],
+  );
 
   if (loading)
     return (
@@ -522,6 +687,9 @@ function WorkflowEditorInner({
           </button>
           <button
             onClick={() => {
+              setSelectedRun(null);
+              setRunSteps([]);
+              setInspectingRun(null);
               fetchExecutions();
               setIsHistoryModalOpen(true);
             }}
@@ -682,7 +850,7 @@ function WorkflowEditorInner({
         <div style={{ flex: 1, position: "relative" }} ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={styledEdges}
             nodeTypes={customNodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
@@ -691,6 +859,9 @@ function WorkflowEditorInner({
             onDrop={onDrop}
             onDragOver={onDragOver}
             onSelectionChange={onSelectionChange}
+            onEdgeClick={(_, edge) =>
+              setSelectedEdge(edges.find((e) => e.id === edge.id) || edge)
+            }
             fitView
             attributionPosition="bottom-right"
           >
@@ -750,7 +921,110 @@ function WorkflowEditorInner({
             </span>
           </div>
           <div style={{ padding: "16px", overflowY: "auto", flex: 1 }}>
-            {selectedNode ? (
+            {selectedEdge ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "var(--studio-600)",
+                    }}
+                  >
+                    Branch Label
+                  </label>
+                  <input
+                    type="text"
+                    value={String(selectedEdge.label || "")}
+                    onChange={(e) => updateEdge({ label: e.target.value })}
+                    placeholder="e.g. true / false / error"
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--studio-300)",
+                      fontSize: "13px",
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    id="edge-error-path"
+                    checked={selectedEdge.data?.errorPath === true}
+                    onChange={(e) =>
+                      updateEdge({
+                        data: { errorPath: e.target.checked },
+                        label: e.target.checked
+                          ? "error"
+                          : selectedEdge.label,
+                      })
+                    }
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <label
+                    htmlFor="edge-error-path"
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "var(--studio-700)",
+                    }}
+                  >
+                    Error path (fired when the source node fails)
+                  </label>
+                </div>
+                <div
+                  style={{
+                    marginTop: "24px",
+                    paddingTop: "16px",
+                    borderTop: "1px dashed var(--studio-300)",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setEdges((eds) =>
+                        eds.filter((e) => e.id !== selectedEdge.id),
+                      );
+                      setSelectedEdge(null);
+                    }}
+                    style={{
+                      padding: "8px",
+                      width: "100%",
+                      borderRadius: "6px",
+                      border: "1px solid var(--studio-danger-muted)",
+                      background: "var(--studio-danger-surface-rose)",
+                      color: "var(--studio-danger-rose)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    <Trash2 size={14} /> Delete Edge
+                  </button>
+                </div>
+              </div>
+            ) : selectedNode ? (
               <div
                 style={{
                   display: "flex",
@@ -1013,6 +1287,95 @@ function WorkflowEditorInner({
                     </div>
                   </>
                 )}
+                {selectedNode.data.nodeType === "loop" && (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "var(--studio-600)",
+                        }}
+                      >
+                        Iterations
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={
+                          (selectedNode.data.config as any)?.iterations || 0
+                        }
+                        onChange={(e) =>
+                          updateNodeData("config", {
+                            ...(selectedNode.data.config as any),
+                            iterations: Number(e.target.value) || 0,
+                          })
+                        }
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid var(--studio-300)",
+                          fontSize: "13px",
+                        }}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "var(--studio-600)",
+                        }}
+                      >
+                        Loop Body (target node)
+                      </label>
+                      <select
+                        value={
+                          (selectedNode.data.config as any)?.loopTarget || ""
+                        }
+                        onChange={(e) =>
+                          updateNodeData("config", {
+                            ...(selectedNode.data.config as any),
+                            loopTarget: e.target.value,
+                          })
+                        }
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid var(--studio-300)",
+                          fontSize: "13px",
+                          background: "white",
+                        }}
+                      >
+                        <option value="">Select target node...</option>
+                        {nodes
+                          .filter(
+                            (n) =>
+                              n.id !== selectedNode.id &&
+                              n.id !== "trigger-1",
+                          )
+                          .map((n) => (
+                            <option key={n.id} value={n.id}>
+                              {(n.data?.label as string) || n.id}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </>
+                )}
                 {selectedNode.data.nodeType === "webhook" && (
                   <>
                     <div
@@ -1089,6 +1452,115 @@ function WorkflowEditorInner({
                         <option value="PATCH">PATCH</option>
                         <option value="DELETE">DELETE</option>
                       </select>
+                    </div>
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        paddingTop: "12px",
+                        borderTop: "1px dashed var(--studio-300)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          color: "var(--studio-400)",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Compensation (run on downstream failure)
+                      </span>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 500,
+                            color: "var(--studio-600)",
+                          }}
+                        >
+                          Compensate URL
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            (selectedNode.data.config as any)?.compensate?.url ||
+                            ""
+                          }
+                          onChange={(e) =>
+                            updateNodeData("config", {
+                              ...(selectedNode.data.config as any),
+                              compensate: {
+                                ...((selectedNode.data.config as any)
+                                  ?.compensate || {}),
+                                url: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder="https://api.example.com/refund"
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--studio-300)",
+                            fontSize: "13px",
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 500,
+                            color: "var(--studio-600)",
+                          }}
+                        >
+                          Compensate Method
+                        </label>
+                        <select
+                          value={
+                            (selectedNode.data.config as any)?.compensate
+                              ?.method || "POST"
+                          }
+                          onChange={(e) =>
+                            updateNodeData("config", {
+                              ...(selectedNode.data.config as any),
+                              compensate: {
+                                ...((selectedNode.data.config as any)
+                                  ?.compensate || {}),
+                                method: e.target.value,
+                              },
+                            })
+                          }
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--studio-300)",
+                            fontSize: "13px",
+                            background: "white",
+                          }}
+                        >
+                          <option value="POST">POST</option>
+                          <option value="GET">GET</option>
+                          <option value="PUT">PUT</option>
+                          <option value="PATCH">PATCH</option>
+                          <option value="DELETE">DELETE</option>
+                        </select>
+                      </div>
                     </div>
                   </>
                 )}
@@ -1168,7 +1640,7 @@ function WorkflowEditorInner({
             style={{
               background: "white",
               borderRadius: "12px",
-              width: "600px",
+              width: "720px",
               maxHeight: "80vh",
               display: "flex",
               flexDirection: "column",
@@ -1193,7 +1665,7 @@ function WorkflowEditorInner({
                     color: "var(--studio-900)",
                   }}
                 >
-                  Execution History
+                  {inspectingRun ? "Run Inspector" : "Execution History"}
                 </h3>
                 <p
                   style={{
@@ -1202,11 +1674,13 @@ function WorkflowEditorInner({
                     color: "var(--studio-500)",
                   }}
                 >
-                  Recent runs for this workflow
+                  {inspectingRun
+                    ? "Step-by-step trail of this run"
+                    : "Recent runs for this workflow"}
                 </p>
               </div>
               <button
-                onClick={() => setIsHistoryModalOpen(false)}
+                onClick={closeHistory}
                 style={{
                   background: "none",
                   border: "none",
@@ -1219,7 +1693,354 @@ function WorkflowEditorInner({
               </button>
             </div>
             <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
-              {executions.length === 0 ? (
+              {inspectingRun ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        setSelectedRun(null);
+                        setRunSteps([]);
+                        setInspectingRun(null);
+                      }}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--studio-300)",
+                        background: "white",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "var(--studio-700)",
+                      }}
+                    >
+                      <ArrowLeft size={14} /> Back to runs
+                    </button>
+                    {selectedRun?.status === "FAILED" &&
+                      selectedRun.resumeFrom && (
+                        <button
+                          onClick={() => handleResumeRun(selectedRun.id)}
+                          disabled={runActionLoading}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            border: "none",
+                            background: "var(--studio-accent)",
+                            color: "white",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          <RotateCcw size={14} /> Resume Run
+                        </button>
+                      )}
+                  </div>
+                  <div
+                    style={{
+                      border: "1px solid var(--studio-200)",
+                      borderRadius: "8px",
+                      padding: "16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          color: "var(--studio-600)",
+                        }}
+                      >
+                        {selectedRun?.id}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          padding: "4px 8px",
+                          borderRadius: "12px",
+                          fontWeight: 600,
+                          background:
+                            selectedRun?.status === "COMPLETED"
+                              ? "var(--studio-success-subtle)"
+                              : selectedRun?.status === "WAITING"
+                                ? "var(--studio-warning-subtle)"
+                                : "var(--studio-danger-subtle)",
+                          color:
+                            selectedRun?.status === "COMPLETED"
+                              ? "var(--studio-success-text)"
+                              : selectedRun?.status === "WAITING"
+                                ? "var(--studio-warning-text)"
+                                : "var(--studio-danger-text)",
+                        }}
+                      >
+                        {selectedRun?.status}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                        fontSize: "12px",
+                        color: "var(--studio-500)",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span>
+                        Started:{" "}
+                        {selectedRun?.startedAt
+                          ? new Date(selectedRun.startedAt).toLocaleString()
+                          : "—"}
+                      </span>
+                      {selectedRun?.completedAt && (
+                        <span>
+                          Finished:{" "}
+                          {new Date(
+                            selectedRun.completedAt,
+                          ).toLocaleString()}
+                        </span>
+                      )}
+                      <span>Trigger: {selectedRun?.trigger || "MANUAL"}</span>
+                      {selectedRun?.resumeFrom && (
+                        <span>Resume from: {selectedRun.resumeFrom}</span>
+                      )}
+                    </div>
+                    {selectedRun?.error && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          padding: "10px 12px",
+                          borderRadius: "6px",
+                          background: "var(--studio-danger-surface-rose)",
+                          color: "var(--studio-danger-rose)",
+                          fontSize: "12px",
+                          fontFamily: "monospace",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {selectedRun.error}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        color: "var(--studio-400)",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      Steps ({runSteps.length})
+                    </span>
+                  </div>
+                  {runSteps.length === 0 ? (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "20px 0",
+                        color: "var(--studio-400)",
+                        fontSize: "13px",
+                      }}
+                    >
+                      No steps recorded yet.
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      {runSteps.map((step: any) => (
+                        <div
+                          key={step.id}
+                          style={{
+                            border:
+                              step.status === "FAILED"
+                                ? "1px solid var(--studio-danger-muted)"
+                                : "1px solid var(--studio-200)",
+                            borderRadius: "8px",
+                            padding: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: "var(--studio-400)",
+                                  fontWeight: 600,
+                                  minWidth: "18px",
+                                }}
+                              >
+                                {step.sortOrder}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "13px",
+                                  fontWeight: 500,
+                                  color: "var(--studio-800)",
+                                }}
+                              >
+                                {step.nodeLabel ||
+                                  `${step.nodeType} (${step.nodeId})`}
+                              </span>
+                            </div>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                padding: "3px 8px",
+                                borderRadius: "12px",
+                                fontWeight: 600,
+                                background:
+                                  step.status === "SUCCESS"
+                                    ? "var(--studio-success-subtle)"
+                                    : step.status === "FAILED"
+                                      ? "var(--studio-danger-subtle)"
+                                      : step.status === "COMPENSATED"
+                                        ? "var(--studio-warning-subtle)"
+                                        : step.status === "WAITING"
+                                          ? "var(--studio-warning-subtle)"
+                                          : "var(--studio-100)",
+                                color:
+                                  step.status === "SUCCESS"
+                                    ? "var(--studio-success-text)"
+                                    : step.status === "FAILED"
+                                      ? "var(--studio-danger-text)"
+                                      : step.status === "COMPENSATED"
+                                        ? "var(--studio-warning-text)"
+                                        : step.status === "WAITING"
+                                          ? "var(--studio-warning-text)"
+                                          : "var(--studio-500)",
+                              }}
+                            >
+                              {step.status}
+                            </span>
+                          </div>
+                          {step.error && (
+                            <div
+                              style={{
+                                marginTop: "8px",
+                                padding: "8px 10px",
+                                borderRadius: "6px",
+                                background:
+                                  "var(--studio-danger-surface-rose)",
+                                color: "var(--studio-danger-rose)",
+                                fontSize: "12px",
+                                fontFamily: "monospace",
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {step.error}
+                            </div>
+                          )}
+                          {step.nodeType === "approval" &&
+                            step.status === "WAITING" && (
+                              <div
+                                style={{
+                                  marginTop: "10px",
+                                  display: "flex",
+                                  gap: "8px",
+                                }}
+                              >
+                                <button
+                                  onClick={() =>
+                                    handleApproveStep(
+                                      selectedRun.id,
+                                      step.id,
+                                      true,
+                                    )
+                                  }
+                                  disabled={runActionLoading}
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "var(--studio-success)",
+                                    color: "white",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    fontSize: "12px",
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  <Check size={14} /> Approve
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleApproveStep(
+                                      selectedRun.id,
+                                      step.id,
+                                      false,
+                                    )
+                                  }
+                                  disabled={runActionLoading}
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "6px",
+                                    border: "1px solid var(--studio-danger-muted)",
+                                    background:
+                                      "var(--studio-danger-surface-rose)",
+                                    color: "var(--studio-danger-rose)",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    fontSize: "12px",
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  <X size={14} /> Reject
+                                </button>
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : executions.length === 0 ? (
                 <div
                   style={{
                     textAlign: "center",
@@ -1248,7 +2069,9 @@ function WorkflowEditorInner({
                         border: "1px solid var(--studio-200)",
                         borderRadius: "8px",
                         padding: "16px",
+                        cursor: "pointer",
                       }}
+                      onClick={() => fetchRunDetail(exec.id)}
                     >
                       <div
                         style={{
@@ -1276,11 +2099,15 @@ function WorkflowEditorInner({
                             background:
                               exec.status === "COMPLETED"
                                 ? "var(--studio-success-subtle)"
-                                : "var(--studio-danger-subtle)",
+                                : exec.status === "WAITING"
+                                  ? "var(--studio-warning-subtle)"
+                                  : "var(--studio-danger-subtle)",
                             color:
                               exec.status === "COMPLETED"
                                 ? "var(--studio-success-text)"
-                                : "var(--studio-danger-text)",
+                                : exec.status === "WAITING"
+                                  ? "var(--studio-warning-text)"
+                                  : "var(--studio-danger-text)",
                           }}
                         >
                           {exec.status}
@@ -1290,18 +2117,31 @@ function WorkflowEditorInner({
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: "16px",
+                          justifyContent: "space-between",
                           fontSize: "12px",
                           color: "var(--studio-500)",
                         }}
                       >
                         <span>
-                          Started: {new Date(exec.startedAt).toLocaleString()}
+                          Started:{" "}
+                          {new Date(exec.startedAt).toLocaleString()}
                         </span>
-                        {exec.durationMs && (
-                          <span>Duration: {exec.durationMs}ms</span>
-                        )}
+                        <ChevronRight size={14} />
                       </div>
+                      {exec.error && (
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            fontSize: "12px",
+                            color: "var(--studio-danger-rose)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {exec.error}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
