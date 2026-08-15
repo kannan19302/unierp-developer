@@ -1,0 +1,12 @@
+{
+  "repositories": [
+    "unierp-api",
+    "unierp-developer",
+    "unierp-design-system",
+    "unierp-sandbox",
+    "unierp-extension-api",
+    "unierp-sdk"
+  ],
+  "consumedApis": [],
+  "forbiddenApis": []
+}
