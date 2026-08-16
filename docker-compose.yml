@@ -1,0 +1,27 @@
+services:
+  developer-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: developer-platform
+    restart: unless-stopped
+    ports:
+      - "4008:4008"
+    environment:
+      PORT: "4008"
+      NODE_ENV: development
+      API_URL: ${API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_API_URL: ""
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-super_secret_local_dev_key_only_12345}
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4008/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      start_period: 25s
+      retries: 3
