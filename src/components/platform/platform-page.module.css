@@ -6,7 +6,7 @@
    built from `style={{ … }}` objects, which meant the same 240px card grid
    and the same section heading were re-declared in five files and had already
    drifted apart in three of them. A stylesheet is also the only place the
-   patina display axes (`font-variation-settings`) can be set at all — the
+   Meridian display axes (`font-variation-settings`) can be set at all — the
    `style` prop cannot express a variable-font axis from a token.
    ───────────────────────────────────────────────── */
 
@@ -44,9 +44,7 @@
 
 .title {
   font-family: var(--font-display, var(--font-sans));
-  font-variation-settings:
-    "wdth" var(--display-wdth-title, 92),
-    "wght" var(--display-wght-title, 680);
+  font-variation-settings: "wght" var(--display-wght-title, 680);
   font-size: clamp(1.75rem, 3.2vw, 2.375rem);
   line-height: 1.08;
   letter-spacing: var(--display-tracking-title, -0.026em);
@@ -88,9 +86,7 @@
   align-items: center;
   gap: var(--space-2-5);
   font-family: var(--font-display, var(--font-sans));
-  font-variation-settings:
-    "wdth" var(--display-wdth-label, 100),
-    "wght" var(--display-wght-label, 620);
+  font-variation-settings: "wght" var(--display-wght-label, 620);
   font-size: var(--text-lg);
   letter-spacing: var(--display-tracking-label, -0.01em);
   color: var(--color-text);
@@ -292,9 +288,7 @@
 
 .empty_title {
   font-family: var(--font-display, var(--font-sans));
-  font-variation-settings:
-    "wdth" var(--display-wdth-label, 100),
-    "wght" var(--display-wght-label, 620);
+  font-variation-settings: "wght" var(--display-wght-label, 620);
   font-size: var(--text-base);
   color: var(--color-text);
   margin: 0 0 var(--space-2);

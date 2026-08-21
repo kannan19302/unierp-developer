@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Public_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Instrument_Sans, Inter, Martian_Mono } from "next/font/google";
 
 export const dynamic = "force-dynamic";
 import "@kannan19302/ui/styles";
@@ -15,9 +15,9 @@ import { AuthShell } from "@/components/AuthShell";
 import { AppProviders } from "@/platform/providers/AppProviders";
 
 /**
- * Patina's three faces, self-hosted.
+ * Meridian's three faces, self-hosted.
  *
- * The theme (`design-system/src/tokens/themes/patina.css`) names these
+ * The theme (`design-system/src/tokens/themes/meridian.css`) names these
  * families as literals so a consumer without next/font still gets something
  * close, but loading them here is what makes them real: next/font subsets and
  * self-hosts, so there is no render-blocking request to fonts.googleapis.com
@@ -25,26 +25,28 @@ import { AppProviders } from "@/platform/providers/AppProviders";
  * the theme's tokens exactly, so the theme keeps working if this is ever
  * removed and the CSS literals take over.
  *
- * Archivo carries the `wdth` axis on purpose — compression by size is what
- * gives the display face its voice, and a static cut cannot do it. Loading the
- * axis costs one variable font file, not one file per width.
+ * Three faces, three jobs. Inter is the body and data face and is NOT the one
+ * carrying personality — it is here for its tall x-height at 14px and its
+ * tabular figures, which is what a ledger column needs. Instrument Sans is
+ * semi-condensed and appears only where something announces itself. Martian
+ * Mono is deliberately not JetBrains Mono: the mono here does identity work
+ * (the Meridian bar's address, ids, versions, counts) and should not look like
+ * a code editor leaked into the chrome.
  */
-const archivo = Archivo({
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   display: "swap",
-  axes: ["wdth"],
   variable: "--font-display",
 });
 
-const publicSans = Public_Sans({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
 });
 
-const plexMono = IBM_Plex_Mono({
+const martianMono = Martian_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
   display: "swap",
   variable: "--font-mono",
 });
@@ -67,13 +69,13 @@ export const metadata: Metadata = {
  * app's shell (design-system styles, theme, toasts) minus the tenant-app
  * providers (query client, app framework), which the studio does not use.
  *
- * `data-theme="patina"` is what opts this app — and only this app — into the
- * developer platform's own theme. The design system is consumed by five other
- * apps from the same package; editing the shared `light` theme would have
- * restyled all of them, so patina is an additional theme selected by one
- * attribute here. `ThemeProvider` reads and persists the user's own choice
- * over the top, so switching to `patina-dark` (or back to `light`) stays a
- * user setting rather than a redeploy.
+ * `data-theme="meridian"` opts this app into the suite design language. Unlike
+ * patina, which it replaces, Meridian is intended to become the default for
+ * every app — but it is still shipped as a theme rather than as an edit to
+ * `light`, so adoption happens app by app under Track B phases M2–M10 instead
+ * of as one flag day across seven consumers. `ThemeProvider` reads and
+ * persists the user's own choice over the top, so switching to
+ * `meridian-dark` (or back to `light`) stays a user setting, not a redeploy.
  */
 export default function RootLayout({
   children,
@@ -83,12 +85,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}
-      data-theme="patina"
+      className={`${instrumentSans.variable} ${inter.variable} ${martianMono.variable}`}
+      data-theme="meridian"
       suppressHydrationWarning
     >
       <body>
-        <ThemeProvider defaultSetting="patina">
+        <ThemeProvider defaultSetting="meridian">
           <AuthShell>
             <AppProviders>
               <ToastProvider>{children}</ToastProvider>

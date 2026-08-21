@@ -13,9 +13,7 @@
 
 .title {
   font-family: var(--font-display, var(--font-sans));
-  font-variation-settings:
-    "wdth" var(--display-wdth-title, 92),
-    "wght" var(--display-wght-title, 680);
+  font-variation-settings: "wght" var(--display-wght-title, 680);
   font-size: clamp(1.5rem, 2.6vw, 1.875rem);
   line-height: 1.1;
   letter-spacing: var(--display-tracking-title, -0.026em);
@@ -65,9 +63,7 @@
 
 .stat_value {
   font-family: var(--font-display, var(--font-sans));
-  font-variation-settings:
-    "wdth" var(--display-wdth-title, 92),
-    "wght" var(--display-wght-title, 680);
+  font-variation-settings: "wght" var(--display-wght-title, 680);
   font-size: 1.75rem;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -93,9 +89,7 @@
 
 .section_title {
   font-family: var(--font-display, var(--font-sans));
-  font-variation-settings:
-    "wdth" var(--display-wdth-label, 100),
-    "wght" var(--display-wght-label, 620);
+  font-variation-settings: "wght" var(--display-wght-label, 620);
   font-size: var(--text-base);
   letter-spacing: var(--display-tracking-label, -0.01em);
   color: var(--color-text);
