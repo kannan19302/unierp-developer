@@ -1793,7 +1793,7 @@ export const getAppSpecificNavigation = (
           isHeader: true,
           items: [
             { name: "Web Studio Overview", href: "/builder/web", icon: Globe },
-            { name: "Sites", href: "/builder/web/sites", icon: Globe },
+            { name: "Sites", href: "/builder/sites", icon: Globe },
             {
               name: "CMS Collections",
               href: "/builder/web/collections",
@@ -1801,7 +1801,7 @@ export const getAppSpecificNavigation = (
             },
             { name: "Blog Posts", href: "/builder/web/blog", icon: FileText },
             { name: "Asset Manager", href: "/builder/web/assets", icon: Image },
-            { name: "Templates", href: "/builder/web/templates", icon: Code2 },
+            { name: "Templates", href: "/builder/sites/templates", icon: Code2 },
             {
               name: "Navigation Menus",
               href: "/builder/web/menus",

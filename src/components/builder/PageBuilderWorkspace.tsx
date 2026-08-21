@@ -1,27 +1,37 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  ArrowLeft,
-  Save,
-  Eye,
+  ArrowDown,
+  ArrowUp,
+  BarChart3,
+  FileCode2,
+  Heading,
+  Layout,
+  List,
+  Monitor,
+  Settings,
   Smartphone,
   Tablet,
-  Monitor,
   Trash2,
-  Plus,
-  ArrowUp,
-  ArrowDown,
-  Layout,
-  BarChart3,
-  List,
-  FileCode2,
   Type,
-  Heading,
-  Settings,
   X,
 } from "lucide-react";
+import {
+  StudioShell,
+  StudioToolbar,
+  StudioPalette,
+  StudioCanvas,
+  StudioInspector,
+  StudioConsole,
+  PublishDiffDialog,
+  type PaletteGroup,
+  type PublishChange,
+  type StudioProblem,
+} from "@kannan19302/ui/studio";
+import { Button } from "@kannan19302/ui";
 import { useToast } from "@/components/builder/ToastProvider";
+import { StudioRouteFrame } from "@/components/builder/StudioRouteFrame";
 
 export interface PageBuilderWorkspaceProps {
   appId: string;
@@ -43,6 +53,22 @@ export interface PageWidget {
   config: Record<string, any>;
 }
 
+/**
+ * The Page Layout Builder, moved onto `<StudioShell>` — the last of the four
+ * editors retrofitted. It always ran embedded (inside the App Studio's app
+ * detail page, never a standalone route), so it stays embedded here too;
+ * `<StudioRouteFrame embedded>` gives it its parent's box rather than the
+ * whole viewport.
+ *
+ * As with the other three retrofits, the canvas content (the 12-column widget
+ * grid, with its device-frame preview at each viewport width) and the
+ * property inspector (per-widget-type config forms) are reused verbatim from
+ * before the retrofit — the chrome around them changed, not the field-by-field
+ * logic inside them. The widget palette was already a real button list
+ * (`handleAddWidget`), so unlike the other three editors this one needed no
+ * drag-only-insertion fix — `<StudioPalette>` just wraps what was already
+ * keyboard-reachable.
+ */
 export function PageBuilderWorkspace({
   appId,
   pageId,
@@ -62,13 +88,17 @@ export function PageBuilderWorkspace({
     "desktop",
   );
   const [saving, setSaving] = useState(false);
+  const [showPublish, setShowPublish] = useState(false);
+  const [validated, setValidated] = useState(false);
+
+  // What was last loaded/saved — the publish diff is computed against this,
+  // the same pattern as the other three retrofits.
+  const [lastSaved, setLastSaved] = useState<PageWidget[]>([]);
 
   useEffect(() => {
-    if (Array.isArray(initialLayout)) {
-      setWidgets(initialLayout);
-    } else {
-      setWidgets([]);
-    }
+    const loaded = Array.isArray(initialLayout) ? initialLayout : [];
+    setWidgets(loaded);
+    setLastSaved(loaded);
   }, [initialLayout]);
 
   const selectedWidget = widgets.find((w) => w.id === selectedWidgetId);
@@ -187,6 +217,7 @@ export function PageBuilderWorkspace({
 
       if (res.ok) {
         showToast("Page layout successfully saved!", "success");
+        setLastSaved(widgets);
         onSaved(widgets);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -244,342 +275,230 @@ export function PageBuilderWorkspace({
     },
   ];
 
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const paletteGroups = useMemo<PaletteGroup[]>(
+    () => [
+      {
+        id: "widgets",
+        label: "Add Component",
+        items: widgetPalette.map((p) => ({
+          id: p.type,
+          label: p.label,
+          icon: p.icon,
+        })),
+      },
+    ],
+    [],
+  );
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  const problems = useMemo<StudioProblem[]>(() => {
+    if (!validated) return [];
+    const found: StudioProblem[] = [];
+    for (const w of widgets) {
+      if (w.type === "form" && !w.config.formId) {
+        found.push({
+          id: `${w.id}-noform`,
+          severity: "error",
+          message: "Form widget has no form linked.",
+          where: w.title,
+          targetId: w.id,
+        });
+      }
+      if (w.type === "table" && !w.config.dataModelId) {
+        found.push({
+          id: `${w.id}-nomodel`,
+          severity: "error",
+          message: "Data table widget has no data model linked.",
+          where: w.title,
+          targetId: w.id,
+        });
+      }
+      if (w.type === "chart" && !w.config.dashboardId) {
+        found.push({
+          id: `${w.id}-nodash`,
+          severity: "error",
+          message: "Chart widget has no dashboard linked.",
+          where: w.title,
+          targetId: w.id,
+        });
+      }
+    }
+    if (widgets.length === 0) {
+      found.push({
+        id: "empty-page",
+        severity: "warning",
+        message: "This page has no widgets yet.",
+      });
+    }
+    return found;
+  }, [widgets, validated]);
+
+  const errorCount = problems.filter((p) => p.severity === "error").length;
+
+  // ── Publish diff ───────────────────────────────────────────────────────────
+  const changes = useMemo<PublishChange[]>(() => {
+    const before = new Map(lastSaved.map((w) => [w.id, w]));
+    const after = new Map(widgets.map((w) => [w.id, w]));
+    const out: PublishChange[] = [];
+
+    for (const [wid, w] of after) {
+      const prev = before.get(wid);
+      if (!prev) {
+        out.push({ id: `add-${wid}`, kind: "added", what: `${w.title} (${w.type})` });
+      } else if (JSON.stringify(prev) !== JSON.stringify(w)) {
+        out.push({
+          id: `chg-${wid}`,
+          kind: "changed",
+          what: w.title,
+          detail: prev.title !== w.title ? `${prev.title} → ${w.title}` : undefined,
+        });
+      }
+    }
+    for (const [wid, w] of before) {
+      if (!after.has(wid)) {
+        out.push({ id: `del-${wid}`, kind: "removed", what: `${w.title} (${w.type})` });
+      }
+    }
+
+    const beforeOrder = lastSaved.map((w) => w.id).join(",");
+    const afterOrder = widgets.map((w) => w.id).join(",");
+    if (beforeOrder !== afterOrder && before.size === after.size) {
+      out.push({ id: "reordered", kind: "changed", what: "Widget order" });
+    }
+
+    return out;
+  }, [widgets, lastSaved]);
+
+  const dirty = changes.length > 0;
+
   return (
-    <div
-      className="builder-dark-theme"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        zIndex: 10000,
-        backgroundColor: "var(--studio-900)",
-        color: "var(--studio-200)",
-        fontFamily: "var(--font-sans)",
-        overflow: "hidden",
-      }}
-    >
-      {/* Header Panel */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 var(--space-4)",
-          height: "60px",
-          background: "rgba(30, 41, 59, 0.8)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-4)",
-          }}
-        >
-          <button
-            onClick={onBack}
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "var(--radius-md)",
-              padding: "var(--space-2)",
-              cursor: "pointer",
-              color: "var(--studio-200)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1
-              style={{
-                fontSize: "var(--text-lg)",
-                fontWeight: 700,
-                margin: 0,
-                color: "white",
+    <>
+      <StudioRouteFrame embedded>
+        <StudioShell
+          label={`${pageName} — page builder`}
+          defaultInspectorOpen={Boolean(selectedWidgetId)}
+          toolbar={
+            <StudioToolbar
+              name={pageName}
+              kind="Page"
+              dirty={dirty}
+              problemCount={problems.length}
+              environment={
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onBack}
+                    aria-label="Back"
+                  >
+                    ← Back
+                  </Button>
+                  <div
+                    role="group"
+                    aria-label="Preview viewport"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-1)",
+                      background: "var(--studio-chrome-bg)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "2px",
+                    }}
+                  >
+                    {(
+                      [
+                        ["desktop", Monitor, "Desktop"],
+                        ["tablet", Tablet, "Tablet"],
+                        ["mobile", Smartphone, "Mobile"],
+                      ] as const
+                    ).map(([v, Icon, label]) => (
+                      <Button
+                        key={v}
+                        variant={viewport === v ? "secondary" : "ghost"}
+                        size="sm"
+                        aria-pressed={viewport === v}
+                        onClick={() => setViewport(v)}
+                        leftIcon={<Icon size={14} aria-hidden="true" />}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                </>
+              }
+              validate={{ onAction: () => setValidated(true) }}
+              preview={{
+                onAction: () => {
+                  setPreviewMode(!previewMode);
+                  setSelectedWidgetId(null);
+                },
               }}
-            >
-              Page Layout Builder
-            </h1>
-            <span
-              style={{ fontSize: "var(--text-xs)", color: "var(--studio-400)" }}
-            >
-              Design layouts dynamically for: <strong>{pageName}</strong>
-            </span>
-          </div>
-        </div>
-
-        {/* Viewport controls */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            background: "rgba(0,0,0,0.2)",
-            padding: "4px",
-            borderRadius: "var(--radius-lg)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
-          }}
-        >
-          {(
-            [
-              ["desktop", Monitor, "Desktop"],
-              ["tablet", Tablet, "Tablet"],
-              ["mobile", Smartphone, "Mobile"],
-            ] as const
-          ).map(([v, Icon, label]) => (
-            <button
-              key={v}
-              onClick={() => setViewport(v)}
-              style={{
-                background:
-                  viewport === v ? "rgba(255,255,255,0.1)" : "transparent",
-                color: viewport === v ? "white" : "var(--studio-500)",
-                border: "none",
-                padding: "6px 12px",
-                borderRadius: "var(--radius-md)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
+              testRun={{
+                disabledReason:
+                  "A page is tested by previewing it — there is no separate run step.",
               }}
-            >
-              <Icon size={14} />{" "}
-              <span style={{ fontSize: "12px" }}>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-3)",
-          }}
-        >
-          <button
-            onClick={() => {
-              setPreviewMode(!previewMode);
-              setSelectedWidgetId(null);
-            }}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "var(--radius-md)",
-              background: previewMode
-                ? "rgba(59, 130, 246, 0.2)"
-                : "rgba(255,255,255,0.05)",
-              color: previewMode ? "var(--studio-accent-light)" : "white",
-              border:
-                "1px solid " +
-                (previewMode
-                  ? "rgba(59, 130, 246, 0.5)"
-                  : "rgba(255,255,255,0.1)"),
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontWeight: "500",
-              fontSize: "13px",
-            }}
-          >
-            <Eye size={14} />{" "}
-            <span>{previewMode ? "Edit Mode" : "Preview Layout"}</span>
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              padding: "8px 18px",
-              borderRadius: "var(--radius-md)",
-              background: "var(--studio-accent)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontWeight: "600",
-              fontSize: "13px",
-            }}
-          >
-            {saving ? (
-              <span
-                className="animate-spin"
-                style={{
-                  width: "14px",
-                  height: "14px",
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "white",
-                  borderRadius: "50%",
-                  display: "inline-block",
-                }}
+              version_={{
+                disabledReason: "Version history is not wired up for pages yet.",
+              }}
+              publish={{
+                onAction: () => {
+                  setValidated(true);
+                  setShowPublish(true);
+                },
+                busy: saving,
+              }}
+            />
+          }
+          palette={
+            previewMode ? undefined : (
+              <StudioPalette
+                groups={paletteGroups}
+                onInsert={(item) => handleAddWidget(item.id as PageWidget["type"])}
+                searchPlaceholder="Search components…"
+                label="Add component"
               />
-            ) : (
-              <Save size={14} />
-            )}
-            <span>Save Layout</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Main Workspace Layout */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Left Sidebar - Widget Palette */}
-        {!previewMode && (
-          <aside
-            style={{
-              width: "280px",
-              background: "var(--studio-800)",
-              borderRight: "1px solid rgba(255,255,255,0.1)",
-              padding: "var(--space-4)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-3)",
-              overflowY: "auto",
-              flexShrink: 0,
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "var(--text-sm)",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--studio-400)",
-                marginBottom: 4,
-              }}
+            )
+          }
+          canvas={
+            <StudioCanvas
+              label={`${pageName} layout`}
+              variant="spatial"
+              isEmpty={false}
             >
-              Add Component
-            </h3>
-            {widgetPalette.map((p) => (
-              <button
-                key={p.type}
-                onClick={() => handleAddWidget(p.type)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-3)",
-                  padding: "var(--space-3)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  borderRadius: "var(--radius-lg)",
-                  background: "rgba(255,255,255,0.02)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  width: "100%",
-                  transition: "all 0.2s ease-in-out",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-                }}
-              >
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: "var(--radius-md)",
-                    background: `${p.color}15`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <p.icon size={16} style={{ color: p.color }} />
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: "var(--text-xs)",
-                      color: "white",
-                    }}
-                  >
-                    {p.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "var(--studio-400)",
-                      marginTop: 1,
-                    }}
-                  >
-                    {p.desc}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </aside>
-        )}
-
-        {/* Center Canvas Viewport */}
-        <main
-          style={{
-            flex: 1,
-            backgroundColor: "var(--studio-900)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            padding: "var(--space-6) var(--space-4)",
-            overflowY: "auto",
-            backgroundImage:
-              "radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth:
-                viewport === "desktop"
-                  ? "1080px"
-                  : viewport === "tablet"
-                    ? "768px"
-                    : "375px",
-              background: "white",
-              color: "var(--studio-900)",
-              padding: "var(--space-6)",
-              borderRadius:
-                viewport === "desktop" ? "var(--radius-xl)" : "24px",
-              border:
-                viewport !== "desktop"
-                  ? "12px solid var(--studio-800)"
-                  : "1px solid var(--color-border)",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
-              minHeight: viewport === "desktop" ? "640px" : "820px",
-              transition: "max-width 0.3s ease",
-            }}
-          >
-            {viewport !== "desktop" && (
               <div
                 style={{
-                  height: "20px",
-                  display: "flex",
-                  justifyContent: "center",
-                  marginBottom: "var(--space-4)",
+                  maxWidth:
+                    viewport === "desktop"
+                      ? "100%"
+                      : viewport === "tablet"
+                        ? "768px"
+                        : "375px",
+                  margin: "0 auto",
+                  padding: "var(--space-6)",
+                  minHeight: viewport === "desktop" ? "640px" : "820px",
+                  transition: "max-width 0.3s ease",
                 }}
               >
-                <div
-                  style={{
-                    width: "60px",
-                    height: "6px",
-                    background: "var(--studio-300)",
-                    borderRadius: "4px",
-                  }}
-                />
-              </div>
-            )}
+                {viewport !== "desktop" && (
+                  <div
+                    style={{
+                      height: "20px",
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "var(--space-4)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "60px",
+                        height: "6px",
+                        background: "var(--studio-300)",
+                        borderRadius: "4px",
+                      }}
+                    />
+                  </div>
+                )}
 
             {widgets.length === 0 ? (
               <div
@@ -1108,22 +1027,15 @@ export function PageBuilderWorkspace({
                 })}
               </div>
             )}
-          </div>
-        </main>
-
-        {/* Right Settings Panel */}
-        {!previewMode && (
-          <aside
-            style={{
-              width: "320px",
-              background: "var(--studio-800)",
-              borderLeft: "1px solid rgba(255,255,255,0.1)",
-              padding: "var(--space-4)",
-              overflowY: "auto",
-              flexShrink: 0,
-            }}
-          >
-            {selectedWidget ? (
+              </div>
+            </StudioCanvas>
+          }
+          inspector={
+            previewMode ? undefined : (
+              <StudioInspector
+                subject={selectedWidget?.title}
+                properties={
+            selectedWidget ? (
               <div>
                 <div
                   style={{
@@ -1797,9 +1709,37 @@ export function PageBuilderWorkspace({
                 </span>
               </div>
             )}
-          </aside>
-        )}
-      </div>
-    </div>
+              />
+            )
+          }
+          console={
+            <StudioConsole
+              problems={problems}
+              onLocate={setSelectedWidgetId}
+              defaultOpen={errorCount > 0}
+            />
+          }
+        />
+      </StudioRouteFrame>
+
+      <PublishDiffDialog
+        open={showPublish}
+        onClose={() => setShowPublish(false)}
+        name={pageName}
+        environment="production"
+        changes={changes}
+        publishing={saving}
+        onPublish={() => {
+          void handleSave().then(() => setShowPublish(false));
+        }}
+      >
+        {errorCount > 0 ? (
+          <p role="alert" style={{ color: "var(--studio-danger-text)" }}>
+            {errorCount} error{errorCount === 1 ? "" : "s"} must be fixed first —
+            see the console.
+          </p>
+        ) : null}
+      </PublishDiffDialog>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { BLOCK_REGISTRY } from "./blocks/registry";
+import { resolveBlockComponent } from "./blocks/registry";
 import { TenantHeader, TenantFooter } from "../site/TenantHeaderFooter";
 
 export function PublicPageRenderer({
@@ -70,8 +70,7 @@ export function PublicPageRenderer({
       {!hideHeaderFooter && <TenantHeader settings={settings} />}
       <main style={{ flex: 1 }}>
         {sections.map((section) => {
-          const BlockComponent = (BLOCK_REGISTRY[section.type] ||
-            BLOCK_REGISTRY["text"])!;
+          const BlockComponent = resolveBlockComponent(section.type);
           return (
             <div key={section.id}>
               <BlockComponent {...(section.content || {})} />

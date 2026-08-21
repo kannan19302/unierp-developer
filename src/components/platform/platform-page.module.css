@@ -1,0 +1,341 @@
+/* ─────────────────────────────────────────────────
+   Shared chrome for the PlatformShell plane — `/`, `/apps`, `/sites`,
+   `/library`, `/manage`.
+
+   This file exists to end a specific habit: every page in this plane was
+   built from `style={{ … }}` objects, which meant the same 240px card grid
+   and the same section heading were re-declared in five files and had already
+   drifted apart in three of them. A stylesheet is also the only place the
+   patina display axes (`font-variation-settings`) can be set at all — the
+   `style` prop cannot express a variable-font axis from a token.
+   ───────────────────────────────────────────────── */
+
+.page {
+  padding: var(--space-8) var(--space-8) var(--space-16);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* ── Page head ────────────────────────────────── */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-8);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.head_text {
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--label-size, 0.6875rem);
+  letter-spacing: var(--label-tracking, 0.1em);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.title {
+  font-family: var(--font-display, var(--font-sans));
+  font-variation-settings:
+    "wdth" var(--display-wdth-title, 92),
+    "wght" var(--display-wght-title, 680);
+  font-size: clamp(1.75rem, 3.2vw, 2.375rem);
+  line-height: 1.08;
+  letter-spacing: var(--display-tracking-title, -0.026em);
+  color: var(--color-text);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.subtitle {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  max-width: 60ch;
+}
+
+.head_actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ── Section ──────────────────────────────────── */
+
+.section {
+  margin-bottom: var(--space-10);
+}
+
+.section_head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.section_title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  font-family: var(--font-display, var(--font-sans));
+  font-variation-settings:
+    "wdth" var(--display-wdth-label, 100),
+    "wght" var(--display-wght-label, 620);
+  font-size: var(--text-lg);
+  letter-spacing: var(--display-tracking-label, -0.01em);
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* The count sits with the title, in mono, because it is data about the list
+   rather than part of its name. */
+.section_count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Project rows ──────────────────────────────
+   Rows, not a card wall. A tenant has a handful of apps and sites, each with
+   a name, an address, a state and a last-touched time — four aligned columns
+   that a card grid would scatter into four different corners. Rows also let
+   the scope edge run down a single vertical line the eye can track. */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  /* Five columns for five children — the scope edge, the name block, the
+     address, the state chip and the timestamp. Four columns here put the
+     timestamp on an implicit second row, which is what it was doing. */
+  grid-template-columns: 3px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3-5, 0.875rem) var(--space-4) var(--space-3-5, 0.875rem) 0;
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--duration-fast) var(--ease-default);
+}
+
+.rows > .row:last-child {
+  border-bottom: 0;
+}
+
+.row::before {
+  content: "";
+  block-size: 30px;
+  border-radius: 0 2px 2px 0;
+  background: var(--row-hue, transparent);
+}
+
+.row:hover {
+  background: var(--color-bg-hover);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+}
+
+.row_app {
+  --row-hue: var(--scope-app);
+}
+.row_site {
+  --row-hue: var(--scope-site);
+}
+.row_library {
+  --row-hue: var(--scope-library);
+}
+
+.row_main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.row_name {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row:hover .row_name {
+  color: var(--color-primary);
+}
+
+.row_desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row_address {
+  min-width: 0;
+}
+
+.row_meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.row_state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* ── Recents rail ─────────────────────────────── */
+
+.rail {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scrollbar-width: thin;
+}
+
+.recent {
+  flex: 0 0 210px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    background var(--duration-fast) var(--ease-default);
+}
+
+.recent::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  background: var(--row-hue, var(--color-border-strong));
+}
+
+.recent > * {
+  padding-inline-start: var(--space-3);
+}
+
+.recent:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-hover);
+}
+
+.recent:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.recent_name {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent_when {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* ── Empty ────────────────────────────────────── */
+
+.empty {
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  background: var(--color-bg-elevated);
+}
+
+.empty_title {
+  font-family: var(--font-display, var(--font-sans));
+  font-variation-settings:
+    "wdth" var(--display-wdth-label, 100),
+    "wght" var(--display-wght-label, 620);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.empty_body {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0 auto var(--space-4);
+  max-width: 46ch;
+}
+
+.empty_actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Narrow ───────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .page {
+    padding: var(--space-5) var(--space-4) var(--space-12);
+  }
+
+  .row {
+    /* The address and the timestamp are display:none below, so the row is
+       back to three children and three columns. */
+    grid-template-columns: 3px minmax(0, 1fr) auto;
+    gap: var(--space-3);
+  }
+
+  /* The address is the first thing to go, not the state: at this width the
+     row still has to answer "is it live", and the address is recoverable one
+     tap away inside the project. */
+  .row_address {
+    display: none;
+  }
+
+  .row_meta {
+    display: none;
+  }
+}

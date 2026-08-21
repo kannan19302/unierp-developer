@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:nav": "tsx scripts/check-nav-registry.ts",
     "test:e2e": "tsx scripts/test-e2e.ts"
   },
   "dependencies": {

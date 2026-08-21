@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import GridLayout from "react-grid-layout";
 import type { Layout } from "react-grid-layout";
@@ -11,23 +17,54 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 import {
-  ArrowLeft,
-  Save,
-  PlusCircle,
-  Settings,
   BarChart2,
-  PieChart,
-  TrendingUp,
   Hash,
-  Table as TableIcon,
   LayoutDashboard,
+  PieChart,
+  Table as TableIcon,
   Trash2,
-  BoxSelect,
-  X,
+  TrendingUp,
 } from "lucide-react";
-import { useToast } from "@/components/builder/ToastProvider";
+import {
+  StudioShell,
+  StudioToolbar,
+  StudioPalette,
+  StudioCanvas,
+  StudioInspector,
+  StudioConsole,
+  PublishDiffDialog,
+  type PaletteGroup,
+  type PublishChange,
+  type StudioProblem,
+} from "@kannan19302/ui/studio";
+import { EmptyState } from "@kannan19302/ui";
 
-const WIDGET_TYPES = [
+import { useToast } from "@/components/builder/ToastProvider";
+import { StudioRouteFrame } from "@/components/builder/StudioRouteFrame";
+
+interface Widget {
+  id: string;
+  type: string;
+  title: string;
+  dataSource: string;
+  config: Record<string, unknown>;
+}
+
+interface WidgetType {
+  type: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  color: string;
+  defaultW: number;
+  defaultH: number;
+}
+
+/**
+ * Exported for the same reason `FIELD_GROUPS` is exported from
+ * `BuilderSidebar`: the palette is derived from this list, not restated, so it
+ * can never offer a widget type the canvas cannot render.
+ */
+export const WIDGET_TYPES: WidgetType[] = [
   {
     type: "kpi",
     label: "KPI Metric",
@@ -64,28 +101,38 @@ const WIDGET_TYPES = [
     type: "table",
     label: "Data Table",
     icon: TableIcon,
-    color: "var(--studio-500)",
-    defaultW: 12,
+    color: "var(--studio-accent)",
+    defaultW: 8,
     defaultH: 5,
   },
 ];
 
 export interface DashboardEditorWorkspaceProps {
-  /** 'new' to create a blank dashboard, or an existing dashboard id. */
+  /** 'new' to start a blank dashboard, or an existing dashboard id. */
   dashboardId: string;
-  /** Overlay close handler. Falls back to navigating to /builder/erp/dashboards. */
   onBack?: () => void;
   /** Called after a successful save with the saved dashboard's id+name. */
   onSaved?: (dashboard: { id: string; name: string }) => void;
-  /** When embedded inside the app studio, header shows "Close" instead of routing. */
+  /** When embedded inside the app studio, "Close" replaces routing away. */
   embedded?: boolean;
   /** Optional default name for a freshly-created dashboard. */
   defaultName?: string;
 }
 
 /**
- * The full visual Dashboard Editor. Drives both the standalone route
- * (/builder/erp/dashboards/[id]) and the embedded overlay inside the App Studio.
+ * The Dashboard Editor, moved onto `<StudioShell>` — the third of the four
+ * editors retrofitted, after the Form Builder. Same trade as that one: the
+ * chrome is rebuilt, the domain logic (load, save, the widget/layout state)
+ * is not.
+ *
+ * `react-grid-layout` stays exactly where it was — inside `StudioCanvas`'s
+ * `spatial` variant, which is what that variant exists for: an artefact that
+ * owns its own placement and keeps its own drag/resize behaviour. Dragging a
+ * tile to reposition it is a spatial act with no sensible keyboard
+ * equivalent, unlike the form builder's field list, so this is the one editor
+ * where the previous version's mouse-only placement is kept rather than
+ * replaced — inserting a NEW widget, however, is a `<StudioPalette>` button
+ * like every other builder, not drag-only.
  */
 export function DashboardEditorWorkspace({
   dashboardId,
@@ -98,15 +145,25 @@ export function DashboardEditorWorkspace({
   const { showToast } = useToast();
 
   const [currentId, setCurrentId] = useState(dashboardId);
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [layout, setLayout] = useState<any[]>([]);
-  const [widgets, setWidgets] = useState<any[]>([]);
+  const [dashboard, setDashboard] = useState<{ name?: string; status?: string } | null>(
+    null,
+  );
+  const [layout, setLayout] = useState<Layout[]>([]);
+  const [widgets, setWidgets] = useState<Widget[]>([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPublish, setShowPublish] = useState(false);
+  const [validated, setValidated] = useState(false);
   const [width, setWidth] = useState(1200);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // What was last loaded/saved — the publish diff is computed against this.
+  const [lastSaved, setLastSaved] = useState<{
+    layout: Layout[];
+    widgets: Widget[];
+  }>({ layout: [], widgets: [] });
 
   useEffect(() => {
     setCurrentId(dashboardId);
@@ -119,6 +176,7 @@ export function DashboardEditorWorkspace({
         setDashboard({ name: defaultName || "New Dashboard", status: "DRAFT" });
         setLayout([]);
         setWidgets([]);
+        setLastSaved({ layout: [], widgets: [] });
         setLoading(false);
         return;
       }
@@ -131,18 +189,19 @@ export function DashboardEditorWorkspace({
         if (res.ok) {
           const data = await res.json();
           setDashboard(data);
-          if (data.layout)
-            setLayout(
-              typeof data.layout === "string"
-                ? JSON.parse(data.layout)
-                : data.layout,
-            );
-          if (data.widgets)
-            setWidgets(
-              typeof data.widgets === "string"
-                ? JSON.parse(data.widgets)
-                : data.widgets,
-            );
+          const loadedLayout = data.layout
+            ? typeof data.layout === "string"
+              ? JSON.parse(data.layout)
+              : data.layout
+            : [];
+          const loadedWidgets = data.widgets
+            ? typeof data.widgets === "string"
+              ? JSON.parse(data.widgets)
+              : data.widgets
+            : [];
+          setLayout(loadedLayout);
+          setWidgets(loadedWidgets);
+          setLastSaved({ layout: loadedLayout, widgets: loadedWidgets });
         } else {
           showToast("Failed to load dashboard", "error");
         }
@@ -172,7 +231,7 @@ export function DashboardEditorWorkspace({
     else router.push("/builder/erp/dashboards");
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token") || "";
@@ -192,6 +251,7 @@ export function DashboardEditorWorkspace({
       );
       if (res.ok) {
         showToast("Dashboard saved successfully", "success");
+        setLastSaved({ layout, widgets });
         const data = await res.json().catch(() => null);
         const savedId = isNew ? data?.id : currentId;
         if (isNew && savedId) setCurrentId(savedId);
@@ -206,535 +266,432 @@ export function DashboardEditorWorkspace({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [currentId, dashboard, defaultName, layout, widgets, onSaved, router, showToast]);
 
-  const addWidget = (type: string) => {
-    const wt = WIDGET_TYPES.find((t) => t.type === type);
-    if (!wt) return;
-    const id = "w_" + Math.random().toString(36).substr(2, 9);
-    setWidgets([
-      ...widgets,
-      { id, type, title: `New ${wt.label}`, dataSource: "", config: {} },
-    ]);
-    setLayout([
-      ...layout,
-      {
-        i: id,
-        x: (layout.length * 3) % 12,
-        y: Infinity,
-        w: wt.defaultW,
-        h: wt.defaultH,
-      },
-    ]);
-    setSelectedWidgetId(id);
-  };
+  const addWidget = useCallback(
+    (type: string) => {
+      const wt = WIDGET_TYPES.find((t) => t.type === type);
+      if (!wt) return;
+      const id = "w_" + Math.random().toString(36).slice(2, 11);
+      setWidgets((prev) => [
+        ...prev,
+        { id, type, title: `New ${wt.label}`, dataSource: "", config: {} },
+      ]);
+      setLayout((prev) => [
+        ...prev,
+        {
+          i: id,
+          x: (prev.length * 3) % 12,
+          y: Infinity,
+          w: wt.defaultW,
+          h: wt.defaultH,
+        } as Layout,
+      ]);
+      setSelectedWidgetId(id);
+    },
+    [],
+  );
 
-  const removeWidget = (id: string) => {
-    setWidgets(widgets.filter((w) => w.id !== id));
-    setLayout(layout.filter((l) => l.i !== id));
-    if (selectedWidgetId === id) setSelectedWidgetId(null);
-  };
+  const removeWidget = useCallback(
+    (id: string) => {
+      setWidgets((prev) => prev.filter((w) => w.id !== id));
+      setLayout((prev) => prev.filter((l) => l.i !== id));
+      if (selectedWidgetId === id) setSelectedWidgetId(null);
+    },
+    [selectedWidgetId],
+  );
 
   const selectedWidget = widgets.find((w) => w.id === selectedWidgetId);
-  const updateWidgetConfig = (key: string, value: any) => {
-    if (!selectedWidget) return;
-    setWidgets(
-      widgets.map((w) =>
-        w.id === selectedWidget.id ? { ...w, [key]: value } : w,
-      ),
-    );
-  };
+  const updateWidgetConfig = useCallback(
+    (key: keyof Widget, value: unknown) => {
+      if (!selectedWidget) return;
+      setWidgets((prev) =>
+        prev.map((w) =>
+          w.id === selectedWidget.id ? { ...w, [key]: value } : w,
+        ),
+      );
+    },
+    [selectedWidget],
+  );
 
-  if (loading)
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const paletteGroups = useMemo<PaletteGroup[]>(
+    () => [
+      {
+        id: "widgets",
+        label: "Widgets",
+        items: WIDGET_TYPES.map((wt) => ({
+          id: wt.type,
+          label: wt.label,
+          icon: wt.icon,
+        })),
+      },
+    ],
+    [],
+  );
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  const problems = useMemo<StudioProblem[]>(() => {
+    if (!validated) return [];
+    const found: StudioProblem[] = [];
+    for (const w of widgets) {
+      if (!w.dataSource) {
+        found.push({
+          id: `${w.id}-nosource`,
+          severity: "error",
+          message: "Widget has no data source, so it has nothing to show.",
+          where: w.title,
+          targetId: w.id,
+        });
+      }
+      if (!w.title || !w.title.trim()) {
+        found.push({
+          id: `${w.id}-notitle`,
+          severity: "warning",
+          message: "Widget has no title.",
+          where: w.type,
+          targetId: w.id,
+        });
+      }
+    }
+    if (widgets.length === 0) {
+      found.push({
+        id: "empty-dashboard",
+        severity: "warning",
+        message: "This dashboard has no widgets yet.",
+      });
+    }
+    return found;
+  }, [widgets, validated]);
+
+  const errorCount = problems.filter((p) => p.severity === "error").length;
+
+  // ── Publish diff ───────────────────────────────────────────────────────────
+  const changes = useMemo<PublishChange[]>(() => {
+    const beforeW = new Map(lastSaved.widgets.map((w) => [w.id, w]));
+    const afterW = new Map(widgets.map((w) => [w.id, w]));
+    const out: PublishChange[] = [];
+
+    for (const [id, w] of afterW) {
+      const prev = beforeW.get(id);
+      if (!prev) {
+        out.push({ id: `add-${id}`, kind: "added", what: `${w.title} (${w.type})` });
+      } else if (JSON.stringify(prev) !== JSON.stringify(w)) {
+        out.push({
+          id: `chg-${id}`,
+          kind: "changed",
+          what: w.title,
+          detail: prev.title !== w.title ? `${prev.title} → ${w.title}` : undefined,
+        });
+      }
+    }
+    for (const [id, w] of beforeW) {
+      if (!afterW.has(id)) {
+        out.push({ id: `del-${id}`, kind: "removed", what: `${w.title} (${w.type})` });
+      }
+    }
+
+    const beforePositions = new Map(lastSaved.layout.map((l) => [l.i, `${l.x},${l.y},${l.w},${l.h}`]));
+    const afterPositions = new Map(layout.map((l) => [l.i, `${l.x},${l.y},${l.w},${l.h}`]));
+    let moved = 0;
+    for (const [id, pos] of afterPositions) {
+      if (beforePositions.has(id) && beforePositions.get(id) !== pos) moved += 1;
+    }
+    if (moved > 0) {
+      out.push({
+        id: "layout-moved",
+        kind: "changed",
+        what: `Layout — ${moved} widget${moved === 1 ? "" : "s"} repositioned or resized`,
+      });
+    }
+
+    return out;
+  }, [widgets, layout, lastSaved]);
+
+  const dirty = changes.length > 0;
+  const artefactName = dashboard?.name || defaultName || `Dashboard ${currentId}`;
+
+  if (loading) {
     return (
-      <div
-        style={{
-          padding: "var(--space-10)",
-          textAlign: "center",
-          color: "var(--color-text-secondary)",
-        }}
-      >
-        Loading dashboard editor...
-      </div>
-    );
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        zIndex: 10000,
-        backgroundColor: "var(--studio-100)",
-        color: "var(--studio-900)",
-        overflow: "hidden",
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 var(--space-4)",
-          height: "60px",
-          background: "white",
-          borderBottom: "1px solid var(--studio-200)",
-          zIndex: 10,
-        }}
-      >
+      <StudioRouteFrame embedded={embedded}>
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "var(--space-4)",
+            justifyContent: "center",
+            blockSize: "100%",
+            color: "var(--color-text-secondary)",
           }}
         >
-          <button
-            onClick={handleClose}
-            style={{
-              background: "var(--studio-100)",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px",
-              cursor: "pointer",
-              display: "flex",
-            }}
-          >
-            {embedded ? (
-              <X size={16} color="var(--studio-500)" />
-            ) : (
-              <ArrowLeft size={16} color="var(--studio-500)" />
-            )}
-          </button>
-          <div>
-            <h1
-              style={{
-                fontSize: "15px",
-                fontWeight: 600,
-                margin: 0,
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              <LayoutDashboard size={16} color="var(--studio-success)" />
-              <input
-                value={dashboard?.name || ""}
-                onChange={(e) =>
-                  setDashboard({ ...(dashboard || {}), name: e.target.value })
-                }
-                style={{
-                  border: "none",
-                  outline: "none",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: "var(--studio-900)",
-                  background: "transparent",
-                  minWidth: 200,
-                }}
-              />
-            </h1>
-            <span style={{ fontSize: "12px", color: "var(--studio-500)" }}>
-              {dashboard?.status || "DRAFT"}
-            </span>
-          </div>
+          Loading dashboard editor…
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              background: "var(--studio-accent)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            {isSaving ? (
-              <div
-                className="animate-spin"
-                style={{
-                  width: "14px",
-                  height: "14px",
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "white",
-                  borderRadius: "50%",
-                }}
-              />
-            ) : (
-              <Save size={14} />
-            )}
-            <span>{embedded ? "Save & Link" : "Save Dashboard"}</span>
-          </button>
-        </div>
-      </header>
+      </StudioRouteFrame>
+    );
+  }
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <div
-          style={{
-            width: "240px",
-            background: "white",
-            borderRight: "1px solid var(--studio-200)",
-            display: "flex",
-            flexDirection: "column",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              padding: "16px",
-              borderBottom: "1px solid var(--studio-200)",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                color: "var(--studio-400)",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Widgets
-            </span>
-          </div>
-          <div
-            style={{
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              overflowY: "auto",
-            }}
-          >
-            {WIDGET_TYPES.map((wt) => (
-              <button
-                key={wt.type}
-                onClick={() => addWidget(wt.type)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "12px",
-                  background: "white",
-                  border: "1px solid var(--studio-200)",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                  textAlign: "left",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = wt.color;
-                  e.currentTarget.style.background = "var(--studio-50)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--studio-200)";
-                  e.currentTarget.style.background = "white";
-                }}
-              >
-                <wt.icon size={16} color={wt.color} />
-                <span
+  return (
+    <>
+      <StudioRouteFrame embedded={embedded}>
+        <StudioShell
+          label={`${artefactName} — dashboard editor`}
+          defaultInspectorOpen={Boolean(selectedWidgetId)}
+          toolbar={
+            <StudioToolbar
+              name={artefactName}
+              kind="Dashboard"
+              dirty={dirty}
+              version={currentId === "new" ? "draft" : `#${currentId}`}
+              problemCount={problems.length}
+              environment={
+                <button
+                  type="button"
+                  onClick={handleClose}
                   style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--studio-700)",
-                    flex: 1,
+                    all: "unset",
+                    cursor: "pointer",
+                    fontSize: "var(--font-sm)",
+                    color: "var(--studio-chrome-text-muted)",
+                    padding: "var(--space-1) var(--space-2)",
                   }}
                 >
-                  {wt.label}
-                </span>
-                <PlusCircle size={14} color="var(--studio-400)" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div
-          ref={containerRef}
-          style={{
-            flex: 1,
-            position: "relative",
-            overflowY: "auto",
-            padding: "24px",
-          }}
-        >
-          {layout.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                color: "var(--studio-400)",
-                border: "2px dashed var(--studio-300)",
-                borderRadius: "16px",
+                  ← {embedded ? "Close" : "Dashboards"}
+                </button>
+              }
+              validate={{ onAction: () => setValidated(true) }}
+              preview={{
+                disabledReason:
+                  "Preview renders live data once a data source is connected — not part of this pass.",
               }}
-            >
-              <LayoutDashboard
-                size={48}
-                style={{ opacity: 0.3, marginBottom: "16px" }}
-              />
-              <p style={{ fontSize: "15px", fontWeight: 500 }}>
-                Dashboard is empty
-              </p>
-              <p style={{ fontSize: "13px" }}>
-                Click a widget type from the sidebar to add it to the canvas.
-              </p>
-            </div>
-          ) : (
-            <div
-              style={{
-                minHeight: "100%",
-                background: "white",
-                borderRadius: "12px",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
-                padding: "16px",
+              testRun={{
+                disabledReason:
+                  "A dashboard has no separate run step; preview each widget's data source instead.",
               }}
+              version_={{
+                disabledReason: "Version history is not wired up for dashboards yet.",
+              }}
+              publish={{
+                onAction: () => {
+                  setValidated(true);
+                  setShowPublish(true);
+                },
+                busy: isSaving,
+              }}
+            />
+          }
+          palette={
+            <StudioPalette
+              groups={paletteGroups}
+              onInsert={(item) => addWidget(item.id)}
+              searchPlaceholder="Search widget types…"
+              label="Widget types"
+            />
+          }
+          canvas={
+            <StudioCanvas
+              label={`${artefactName} layout`}
+              variant="spatial"
+              isEmpty={layout.length === 0}
+              empty={
+                <EmptyState
+                  title="Dashboard is empty"
+                  description="Pick a widget type from the palette on the left to add it to the canvas."
+                />
+              }
             >
-              <GridLayoutAny
-                className="layout"
-                layout={layout}
-                cols={12}
-                rowHeight={40}
-                width={width - 48 - 32}
-                onLayoutChange={(l: Layout) => setLayout(l as unknown as any[])}
-                isDraggable
-                isResizable
-                margin={[16, 16]}
-              >
-                {layout.map((l) => {
-                  const widget = widgets.find((w) => w.id === l.i);
-                  if (!widget) return <div key={l.i} />;
-                  const isSelected = selectedWidgetId === widget.id;
-                  const wt = WIDGET_TYPES.find((t) => t.type === widget.type);
-                  const Icon = wt?.icon || LayoutDashboard;
-                  return (
-                    <div
-                      key={l.i}
-                      onClick={() => setSelectedWidgetId(widget.id)}
-                      style={{
-                        background: "var(--studio-50)",
-                        border: `1px solid ${isSelected ? "var(--studio-accent-bright)" : "var(--studio-200)"}`,
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                        cursor: "grab",
-                        display: "flex",
-                        flexDirection: "column",
-                        boxShadow: isSelected
-                          ? "0 0 0 2px rgba(59,130,246,0.2)"
-                          : "none",
-                      }}
-                    >
+              <div ref={containerRef} style={{ padding: "var(--space-4)" }}>
+                <GridLayoutAny
+                  className="layout"
+                  layout={layout}
+                  cols={12}
+                  rowHeight={40}
+                  width={Math.max(width - 32, 200)}
+                  onLayoutChange={(l: Layout[]) => setLayout(l)}
+                  isDraggable
+                  isResizable
+                  margin={[16, 16]}
+                >
+                  {layout.map((l) => {
+                    const widget = widgets.find((w) => w.id === l.i);
+                    if (!widget) return <div key={l.i} />;
+                    const isSelected = selectedWidgetId === widget.id;
+                    const wt = WIDGET_TYPES.find((t) => t.type === widget.type);
+                    const Icon = wt?.icon || LayoutDashboard;
+                    return (
                       <div
+                        key={l.i}
+                        role="option"
+                        aria-selected={isSelected}
+                        id={widget.id}
+                        onClick={() => setSelectedWidgetId(widget.id)}
                         style={{
-                          padding: "8px 12px",
-                          borderBottom: "1px solid var(--studio-200)",
+                          background: "var(--color-surface)",
+                          border: `1px solid ${isSelected ? "var(--studio-accent-bright)" : "var(--color-border)"}`,
+                          borderRadius: "var(--radius-md)",
+                          overflow: "hidden",
+                          cursor: "grab",
                           display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          background: "white",
+                          flexDirection: "column",
+                          boxShadow: isSelected
+                            ? "0 0 0 2px var(--studio-accent-subtle)"
+                            : "none",
                         }}
                       >
-                        <Icon
-                          size={14}
-                          color={wt?.color || "var(--studio-500)"}
-                        />
-                        <span
+                        <div
                           style={{
-                            fontSize: "12px",
-                            fontWeight: 600,
-                            color: "var(--studio-600)",
-                            flex: 1,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            padding: "var(--space-2) var(--space-3)",
+                            borderBlockEnd: "1px solid var(--color-border)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "var(--space-2)",
+                            background: "var(--color-surface-raised, var(--color-surface))",
                           }}
                         >
-                          {widget.title}
-                        </span>
+                          <Icon size={14} color={wt?.color || "var(--studio-500)"} />
+                          <span
+                            style={{
+                              fontSize: "var(--font-xs)",
+                              fontWeight: 600,
+                              color: "var(--color-text)",
+                              flex: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {widget.title}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            flex: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
+                          <BarChart2 size={32} opacity={0.5} aria-hidden="true" />
+                        </div>
                       </div>
-                      <div
+                    );
+                  })}
+                </GridLayoutAny>
+              </div>
+            </StudioCanvas>
+          }
+          inspector={
+            <StudioInspector
+              subject={selectedWidget?.title}
+              properties={
+                selectedWidget ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "var(--space-4)",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                      <label
+                        htmlFor="widget-title"
+                        style={{ fontSize: "var(--font-xs)", fontWeight: 500, color: "var(--color-text-secondary)" }}
+                      >
+                        Widget Title
+                      </label>
+                      <input
+                        id="widget-title"
+                        type="text"
+                        value={selectedWidget.title}
+                        onChange={(e) => updateWidgetConfig("title", e.target.value)}
                         style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "var(--studio-300)",
+                          padding: "var(--space-2) var(--space-3)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid var(--color-border)",
+                          fontSize: "var(--font-sm)",
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+                      <label
+                        htmlFor="widget-source"
+                        style={{ fontSize: "var(--font-xs)", fontWeight: 500, color: "var(--color-text-secondary)" }}
+                      >
+                        Data Source
+                      </label>
+                      <select
+                        id="widget-source"
+                        value={selectedWidget.dataSource}
+                        onChange={(e) => updateWidgetConfig("dataSource", e.target.value)}
+                        style={{
+                          padding: "var(--space-2) var(--space-3)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid var(--color-border)",
+                          fontSize: "var(--font-sm)",
+                          background: "var(--color-surface)",
                         }}
                       >
-                        <BarChart2 size={32} opacity={0.5} />
-                      </div>
+                        <option value="">Select a module…</option>
+                        <option value="sales_orders">Sales Orders</option>
+                        <option value="purchase_orders">Purchase Orders</option>
+                        <option value="invoices">Invoices</option>
+                        <option value="custom">Custom Query</option>
+                      </select>
                     </div>
-                  );
-                })}
-              </GridLayoutAny>
-            </div>
-          )}
-        </div>
+                    <button
+                      type="button"
+                      onClick={() => removeWidget(selectedWidget.id)}
+                      style={{
+                        padding: "var(--space-2)",
+                        inlineSize: "100%",
+                        borderRadius: "var(--radius-sm)",
+                        border: "1px solid var(--studio-danger-muted)",
+                        background: "var(--studio-danger-surface-rose)",
+                        color: "var(--studio-danger-rose)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "var(--space-2)",
+                        fontSize: "var(--font-sm)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      <Trash2 size={14} aria-hidden="true" /> Remove widget
+                    </button>
+                  </div>
+                ) : undefined
+              }
+            />
+          }
+          console={
+            <StudioConsole
+              problems={problems}
+              onLocate={setSelectedWidgetId}
+              defaultOpen={errorCount > 0}
+            />
+          }
+        />
+      </StudioRouteFrame>
 
-        <div
-          style={{
-            width: "300px",
-            background: "white",
-            borderLeft: "1px solid var(--studio-200)",
-            display: "flex",
-            flexDirection: "column",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              padding: "16px",
-              borderBottom: "1px solid var(--studio-200)",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <Settings size={16} color="var(--studio-500)" />
-            <span style={{ fontSize: "14px", fontWeight: 600 }}>
-              Widget Settings
-            </span>
-          </div>
-          <div style={{ padding: "16px", overflowY: "auto", flex: 1 }}>
-            {selectedWidget ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "var(--studio-600)",
-                    }}
-                  >
-                    Widget Title
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedWidget.title}
-                    onChange={(e) =>
-                      updateWidgetConfig("title", e.target.value)
-                    }
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      border: "1px solid var(--studio-300)",
-                      fontSize: "13px",
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "var(--studio-600)",
-                    }}
-                  >
-                    Data Source
-                  </label>
-                  <select
-                    value={selectedWidget.dataSource}
-                    onChange={(e) =>
-                      updateWidgetConfig("dataSource", e.target.value)
-                    }
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      border: "1px solid var(--studio-300)",
-                      fontSize: "13px",
-                      background: "white",
-                    }}
-                  >
-                    <option value="">Select a module...</option>
-                    <option value="sales_orders">Sales Orders</option>
-                    <option value="purchase_orders">Purchase Orders</option>
-                    <option value="invoices">Invoices</option>
-                    <option value="custom">Custom Query</option>
-                  </select>
-                </div>
-                <div
-                  style={{
-                    marginTop: "24px",
-                    paddingTop: "16px",
-                    borderTop: "1px dashed var(--studio-300)",
-                  }}
-                >
-                  <button
-                    onClick={() => removeWidget(selectedWidget.id)}
-                    style={{
-                      padding: "8px",
-                      width: "100%",
-                      borderRadius: "6px",
-                      border: "1px solid var(--studio-danger-muted)",
-                      background: "var(--studio-danger-surface-rose)",
-                      color: "var(--studio-danger-rose)",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    <Trash2 size={14} /> Remove Widget
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "40px 0",
-                  color: "var(--studio-400)",
-                }}
-              >
-                <BoxSelect
-                  size={32}
-                  style={{ margin: "0 auto 12px", opacity: 0.5 }}
-                />
-                <p style={{ fontSize: "13px" }}>
-                  Select a widget on the canvas
-                  <br />
-                  to edit its properties.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      <PublishDiffDialog
+        open={showPublish}
+        onClose={() => setShowPublish(false)}
+        name={artefactName}
+        environment="production"
+        rollbackTo={currentId === "new" ? undefined : `the live #${currentId}`}
+        changes={changes}
+        publishing={isSaving}
+        onPublish={() => {
+          void handleSave().then(() => setShowPublish(false));
+        }}
+      >
+        {errorCount > 0 ? (
+          <p role="alert" style={{ color: "var(--studio-danger-text)" }}>
+            {errorCount} error{errorCount === 1 ? "" : "s"} must be fixed first —
+            see the console.
+          </p>
+        ) : null}
+      </PublishDiffDialog>
+    </>
   );
 }

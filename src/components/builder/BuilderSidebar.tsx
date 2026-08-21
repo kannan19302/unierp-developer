@@ -19,7 +19,12 @@ import {
   DollarSign,
 } from "lucide-react";
 
-const FIELD_GROUPS = [
+/**
+ * Exported so the Studio palette can be derived from exactly this list rather
+ * than a second copy of it. Two lists of field types that drift apart is how a
+ * builder ends up offering a type its canvas cannot render.
+ */
+export const FIELD_GROUPS = [
   {
     name: "Layout & Actions",
     items: [

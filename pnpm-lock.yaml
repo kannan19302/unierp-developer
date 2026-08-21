@@ -25,7 +25,7 @@ importers:
         version: 1.0.3
       '@kannan19302/shared':
         specifier: ^1.0.5
-        version: 1.0.5
+        version: link:../shared
       '@kannan19302/ui':
         specifier: ^1.0.15
         version: 1.0.15(@types/react@19.2.18)(next@15.3.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react-is@16.13.1)(react@19.2.8)(redux@5.0.1)
@@ -416,9 +416,6 @@ packages:
 
   '@kannan19302/sdk@1.0.3':
     resolution: {integrity: sha512-wuTgwZVHqkrQ3Qc4o9jsLek2si41xduEI2flcKnIlDGqKU9ESbXnmogqhgEQG1X935DKUsel4G14P83iqrcENA==}
-
-  '@kannan19302/shared@1.0.5':
-    resolution: {integrity: sha512-fR9L6yCFnznsQGfEUmHUNZfKX6FS4vu120JVp7KCQ0EyYnaussxM918IA2x4HC1J0EOOORZHK2PwgbKH65607w==}
 
   '@kannan19302/ui@1.0.15':
     resolution: {integrity: sha512-uYrGs+2xuui5leIdIzc7KEI9i77DFAAyxMmZR84aN0xv1Nx/9aF9YpnZFMcQSl9g1rAQEOzVRvctazB9uy1u8A==}
@@ -1174,10 +1171,6 @@ snapshots:
   '@kannan19302/sdk@1.0.3':
     dependencies:
       '@kannan19302/contracts': 1.0.4
-
-  '@kannan19302/shared@1.0.5':
-    dependencies:
-      zod: 3.25.76
 
   '@kannan19302/ui@1.0.15(@types/react@19.2.18)(next@15.3.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react-is@16.13.1)(react@19.2.8)(redux@5.0.1)':
     dependencies:

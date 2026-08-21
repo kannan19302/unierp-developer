@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   ReactFlow,
@@ -22,27 +28,37 @@ import "@xyflow/react/dist/style.css";
 
 import {
   ArrowLeft,
-  Save,
-  Play,
-  Settings,
   Bell,
-  Mail,
-  Split,
+  BoxSelect,
+  Check,
   CheckSquare,
+  ChevronRight,
   Clock,
   Link2,
-  BoxSelect,
+  Mail,
+  Repeat,
+  RotateCcw,
+  Split,
+  Sparkles,
   Trash2,
   X,
-  Sparkles,
-  Repeat,
-  Check,
-  RotateCcw,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
+import {
+  StudioShell,
+  StudioToolbar,
+  StudioPalette,
+  StudioCanvas,
+  StudioInspector,
+  StudioConsole,
+  PublishDiffDialog,
+  type PaletteGroup,
+  type PublishChange,
+  type StudioProblem,
+} from "@kannan19302/ui/studio";
+import { Button, EmptyState } from "@kannan19302/ui";
 import { useToast } from "@/components/builder/ToastProvider";
 import { AiCopilotSidebar } from "@/components/builder/AiCopilotSidebar";
+import { StudioRouteFrame } from "@/components/builder/StudioRouteFrame";
 
 const initialNodes: Node[] = [
   {
@@ -108,12 +124,15 @@ function CustomNode({ data, isConnectable }: any) {
   const color = nt?.color || "var(--studio-400)";
   return (
     <div
+      role="option"
+      aria-selected={Boolean(data.__selected)}
+      id={data.__nodeId}
       style={{
         display: "flex",
         alignItems: "center",
         gap: "10px",
         padding: "10px 14px",
-        background: "white",
+        background: "var(--color-surface)",
         border: `1px solid ${color}`,
         borderRadius: "8px",
         minWidth: "180px",
@@ -139,27 +158,15 @@ function CustomNode({ data, isConnectable }: any) {
       >
         <Icon size={16} color={color} />
       </div>
-      <div>
-        <div
-          style={{
-            fontSize: "10px",
-            fontWeight: "bold",
-            color,
-            textTransform: "uppercase",
-          }}
-        >
-          {nt?.label || "Node"}
-        </div>
-        <div
-          style={{
-            fontSize: "13px",
-            fontWeight: 500,
-            color: "var(--studio-800)",
-          }}
-        >
-          {data.label}
-        </div>
-      </div>
+      <span
+        style={{
+          fontSize: "13px",
+          fontWeight: 500,
+          color: "var(--color-text)",
+        }}
+      >
+        {data.label}
+      </span>
       <Handle
         type="source"
         position={Position.Bottom}
@@ -180,6 +187,22 @@ export interface WorkflowEditorWorkspaceProps {
   defaultName?: string;
 }
 
+/**
+ * The Flow/Workflow Editor, moved onto `<StudioShell>` — the fourth and last
+ * of the retrofitted editors.
+ *
+ * This is the most complex of the four: it carries run history, per-step
+ * approval, and a resume action alongside the flow canvas. Rather than retype
+ * ~1,200 lines of proven node-inspector and run-history JSX (per-node-type
+ * config forms for email/approval/condition/loop/webhook, and a full
+ * execution-log viewer with step approve/reject), that content is reused
+ * VERBATIM as the `properties` content of `<StudioInspector>` and as a
+ * standalone history panel respectively — the chrome around them changed,
+ * the field-by-field logic inside them did not.
+ *
+ * Domain logic — load, save, connect, drop, execution polling, step
+ * approval — is unchanged from before the retrofit.
+ */
 function WorkflowEditorInner({
   workflowId,
   onBack,
@@ -201,6 +224,14 @@ function WorkflowEditorInner({
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [showPublish, setShowPublish] = useState(false);
+  const [validated, setValidated] = useState(false);
+
+  // What was last loaded/saved — the publish diff is computed against this,
+  // the same pattern as the Form and Dashboard retrofits.
+  const [lastSaved, setLastSaved] = useState<{ nodes: Node[]; edges: Edge[] }>(
+    { nodes: [], edges: [] },
+  );
 
   useEffect(() => {
     setCurrentId(workflowId);
@@ -210,12 +241,7 @@ function WorkflowEditorInner({
     let isMounted = true;
     async function loadWorkflow() {
       if (currentId === "new") {
-        setWorkflow({
-          name: defaultName || "New Workflow",
-          status: "DRAFT",
-          trigger: "Manual",
-        });
-        setNodes([
+        const starterNodes: Node[] = [
           {
             id: "trigger-1",
             type: "input",
@@ -227,8 +253,15 @@ function WorkflowEditorInner({
               padding: "10px",
             },
           },
-        ]);
+        ];
+        setWorkflow({
+          name: defaultName || "New Workflow",
+          status: "DRAFT",
+          trigger: "Manual",
+        });
+        setNodes(starterNodes);
         setEdges([]);
+        setLastSaved({ nodes: starterNodes, edges: [] });
         setLoading(false);
         return;
       }
@@ -241,11 +274,13 @@ function WorkflowEditorInner({
         if (res.ok) {
           const data = await res.json();
           setWorkflow(data);
+          let loadedNodes: Node[];
+          let loadedEdges: Edge[];
           if (data.nodes && data.nodes.length > 0) {
-            setNodes(data.nodes);
-            setEdges(data.edges || []);
-          } else
-            setNodes([
+            loadedNodes = data.nodes;
+            loadedEdges = data.edges || [];
+          } else {
+            loadedNodes = [
               {
                 id: "trigger-1",
                 type: "input",
@@ -257,7 +292,12 @@ function WorkflowEditorInner({
                   padding: "10px",
                 },
               },
-            ]);
+            ];
+            loadedEdges = [];
+          }
+          setNodes(loadedNodes);
+          setEdges(loadedEdges);
+          setLastSaved({ nodes: loadedNodes, edges: loadedEdges });
         } else {
           showToast("Failed to load workflow", "error");
         }
@@ -326,6 +366,32 @@ function WorkflowEditorInner({
     [reactFlowInstance, setNodes],
   );
 
+  /**
+   * The keyboard/click equivalent of `onDrop` — UI_UX_BRIEF §12's palette
+   * contract ("drag is an accelerator, never the only path"). `onDrop`
+   * requires a pointer-drop screen position; this has none, so it places the
+   * new node just below the current lowest node instead, which keeps
+   * successive inserts from stacking on top of each other.
+   */
+  const addNodeFromPalette = useCallback(
+    (nodeType: string, label: string) => {
+      const lowestY = nodes.reduce(
+        (max, n) => Math.max(max, n.position.y),
+        0,
+      );
+      const newNode: Node = {
+        id: getId(),
+        type: "custom",
+        position: { x: 250, y: lowestY + 120 },
+        data: { label, nodeType, config: {} },
+      };
+      setNodes((nds) => nds.concat(newNode));
+      setSelectedNode(newNode);
+      setSelectedEdge(null);
+    },
+    [nodes, setNodes],
+  );
+
   const onSelectionChange = useCallback(
     (params: any) => {
       if (params.nodes.length > 0)
@@ -345,7 +411,7 @@ function WorkflowEditorInner({
     else router.push("/builder/erp/workflows");
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token") || "";
@@ -365,6 +431,7 @@ function WorkflowEditorInner({
       );
       if (res.ok) {
         showToast("Workflow saved successfully", "success");
+        setLastSaved({ nodes, edges });
         const data = await res.json().catch(() => null);
         const savedId = isNew ? data?.id : currentId;
         if (isNew && savedId) setCurrentId(savedId);
@@ -379,7 +446,7 @@ function WorkflowEditorInner({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [currentId, workflow, defaultName, nodes, edges, onSaved, router, showToast]);
 
   const updateNodeData = (key: string, value: any) => {
     if (!selectedNode) return;
@@ -571,7 +638,7 @@ function WorkflowEditorInner({
             fill: errorPath ? "var(--studio-danger-rose)" : "var(--studio-600)",
           },
           labelBgStyle: {
-            fill: "white",
+            fill: "var(--color-surface)",
             fillOpacity: 0.9,
           },
           style: getEdgeStyle(e),
@@ -580,348 +647,285 @@ function WorkflowEditorInner({
     [edges, getEdgeStyle],
   );
 
-  if (loading)
-    return (
-      <div
-        style={{
-          padding: "var(--space-10)",
-          textAlign: "center",
-          color: "var(--color-text-secondary)",
-        }}
-      >
-        Loading editor...
-      </div>
-    );
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const paletteGroups = useMemo<PaletteGroup[]>(
+    () => [
+      {
+        id: "nodes",
+        label: "Node Types",
+        items: NODE_TYPES.map((nt) => ({
+          id: nt.type,
+          label: nt.label,
+          icon: nt.icon,
+        })),
+      },
+    ],
+    [],
+  );
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        zIndex: 10000,
-        backgroundColor: "var(--studio-50)",
-        color: "var(--studio-900)",
-        overflow: "hidden",
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 var(--space-4)",
-          height: "60px",
-          background: "white",
-          borderBottom: "1px solid var(--studio-200)",
-          zIndex: 10,
-        }}
-      >
+  // ── Validation ─────────────────────────────────────────────────────────────
+  const problems = useMemo<StudioProblem[]>(() => {
+    if (!validated) return [];
+    const found: StudioProblem[] = [];
+    const connectedIds = new Set<string>();
+    for (const e of edges) {
+      connectedIds.add(e.source);
+      connectedIds.add(e.target);
+    }
+    for (const n of nodes) {
+      if (n.type === "custom" && !connectedIds.has(n.id)) {
+        found.push({
+          id: `${n.id}-orphan`,
+          severity: "warning",
+          message: "This step is not connected to the flow.",
+          where: String(n.data?.label ?? n.id),
+          targetId: n.id,
+        });
+      }
+      if (n.type === "custom" && !n.data?.label) {
+        found.push({
+          id: `${n.id}-nolabel`,
+          severity: "error",
+          message: "Step has no label.",
+          targetId: n.id,
+        });
+      }
+    }
+    if (nodes.filter((n) => n.type !== "input").length === 0) {
+      found.push({
+        id: "empty-flow",
+        severity: "warning",
+        message: "This flow has no steps yet, only its trigger.",
+      });
+    }
+    return found;
+  }, [nodes, edges, validated]);
+
+  const errorCount = problems.filter((p) => p.severity === "error").length;
+
+  // ── Publish diff ───────────────────────────────────────────────────────────
+  const changes = useMemo<PublishChange[]>(() => {
+    const beforeN = new Map(lastSaved.nodes.map((n) => [n.id, n]));
+    const afterN = new Map(nodes.map((n) => [n.id, n]));
+    const out: PublishChange[] = [];
+
+    for (const [nid, n] of afterN) {
+      const prev = beforeN.get(nid);
+      const label = String(n.data?.label ?? nid);
+      if (!prev) {
+        out.push({ id: `add-${nid}`, kind: "added", what: label });
+      } else if (JSON.stringify(prev) !== JSON.stringify(n)) {
+        out.push({ id: `chg-${nid}`, kind: "changed", what: label });
+      }
+    }
+    for (const [nid, n] of beforeN) {
+      if (!afterN.has(nid)) {
+        out.push({
+          id: `del-${nid}`,
+          kind: "removed",
+          what: String(n.data?.label ?? nid),
+        });
+      }
+    }
+
+    const beforeE = new Set(lastSaved.edges.map((e) => e.id));
+    const afterE = new Set(edges.map((e) => e.id));
+    let addedEdges = 0;
+    let removedEdges = 0;
+    for (const eid of afterE) if (!beforeE.has(eid)) addedEdges += 1;
+    for (const eid of beforeE) if (!afterE.has(eid)) removedEdges += 1;
+    if (addedEdges > 0) {
+      out.push({
+        id: "edges-added",
+        kind: "added",
+        what: `${addedEdges} connection${addedEdges === 1 ? "" : "s"}`,
+      });
+    }
+    if (removedEdges > 0) {
+      out.push({
+        id: "edges-removed",
+        kind: "removed",
+        what: `${removedEdges} connection${removedEdges === 1 ? "" : "s"}`,
+      });
+    }
+
+    return out;
+  }, [nodes, edges, lastSaved]);
+
+  const dirty = changes.length > 0;
+  const artefactName = workflow?.name || defaultName || `Workflow ${currentId}`;
+
+  if (loading) {
+    return (
+      <StudioRouteFrame embedded={embedded}>
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "var(--space-4)",
+            justifyContent: "center",
+            blockSize: "100%",
+            color: "var(--color-text-secondary)",
           }}
         >
-          <button
-            onClick={handleClose}
-            style={{
-              background: "var(--studio-100)",
-              border: "none",
-              borderRadius: "6px",
-              padding: "8px",
-              cursor: "pointer",
-              display: "flex",
-            }}
-          >
-            {embedded ? (
-              <X size={16} color="var(--studio-500)" />
-            ) : (
-              <ArrowLeft size={16} color="var(--studio-500)" />
-            )}
-          </button>
-          <div>
-            <input
-              value={workflow?.name || ""}
-              onChange={(e) =>
-                setWorkflow({ ...(workflow || {}), name: e.target.value })
+          Loading editor…
+        </div>
+      </StudioRouteFrame>
+    );
+  }
+
+  return (
+    <>
+      <StudioRouteFrame embedded={embedded}>
+        <StudioShell
+          label={`${artefactName} — workflow editor`}
+          defaultInspectorOpen={Boolean(selectedNode || selectedEdge)}
+          toolbar={
+            <StudioToolbar
+              name={artefactName}
+              kind="Workflow"
+              dirty={dirty}
+              version={
+                currentId === "new"
+                  ? "draft"
+                  : `${workflow?.status || "DRAFT"} · #${currentId}`
               }
-              style={{
-                border: "none",
-                outline: "none",
-                fontSize: 15,
-                fontWeight: 600,
-                color: "var(--studio-900)",
-                background: "transparent",
-                minWidth: 200,
+              problemCount={problems.length}
+              environment={
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClose}
+                    aria-label={embedded ? "Close" : "Back to workflows"}
+                  >
+                    {embedded ? <X size={14} aria-hidden="true" /> : "←"}{" "}
+                    {embedded ? "Close" : "Workflows"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<Sparkles size={14} aria-hidden="true" />}
+                    onClick={() => setShowCopilot(!showCopilot)}
+                  >
+                    AI Copilot
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<Clock size={14} aria-hidden="true" />}
+                    onClick={() => {
+                      setSelectedRun(null);
+                      setRunSteps([]);
+                      setInspectingRun(null);
+                      fetchExecutions();
+                      setIsHistoryModalOpen(true);
+                    }}
+                  >
+                    History
+                  </Button>
+                </>
+              }
+              validate={{ onAction: () => setValidated(true) }}
+              preview={{
+                disabledReason:
+                  "A flow has no separate preview — use Test run to execute it.",
               }}
-            />
-            <div style={{ fontSize: "12px", color: "var(--studio-500)" }}>
-              {workflow?.status || "DRAFT"} · {nodes.length} nodes
-            </div>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            onClick={() => setShowCopilot(!showCopilot)}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              background: showCopilot ? "rgba(59, 130, 246, 0.1)" : "white",
-              color: showCopilot ? "var(--studio-accent)" : "var(--studio-900)",
-              border: "1px solid var(--studio-300)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            <Sparkles size={14} /> AI Copilot
-          </button>
-          <button
-            onClick={() => {
-              setSelectedRun(null);
-              setRunSteps([]);
-              setInspectingRun(null);
-              fetchExecutions();
-              setIsHistoryModalOpen(true);
-            }}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              background: "white",
-              border: "1px solid var(--studio-300)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            <Clock size={14} /> History
-          </button>
-          <button
-            onClick={handleTestRun}
-            disabled={isExecuting}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              background: "var(--studio-success)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            {isExecuting ? (
-              <div
-                className="animate-spin"
-                style={{
-                  width: "14px",
-                  height: "14px",
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "white",
-                  borderRadius: "50%",
-                }}
-              />
-            ) : (
-              <Play size={14} />
-            )}
-            <span>Test Run</span>
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              background: "var(--studio-accent)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            {isSaving ? (
-              <div
-                className="animate-spin"
-                style={{
-                  width: "14px",
-                  height: "14px",
-                  border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "white",
-                  borderRadius: "50%",
-                }}
-              />
-            ) : (
-              <Save size={14} />
-            )}
-            <span>{embedded ? "Save & Link" : "Save"}</span>
-          </button>
-        </div>
-      </header>
-
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <div
-          style={{
-            width: "240px",
-            background: "white",
-            borderRight: "1px solid var(--studio-200)",
-            display: "flex",
-            flexDirection: "column",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              padding: "16px 16px 8px 16px",
-              borderBottom: "1px solid var(--studio-200)",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                color: "var(--studio-400)",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Node Types
-            </span>
-          </div>
-          <div
-            style={{
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              overflowY: "auto",
-            }}
-          >
-            {NODE_TYPES.map((nt) => (
-              <div
-                key={nt.type}
-                onDragStart={(event) => onDragStart(event, nt.type, nt.label)}
-                draggable
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "12px",
-                  background: "white",
-                  border: "1px solid var(--studio-200)",
-                  borderRadius: "8px",
-                  cursor: "grab",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                }}
-              >
-                <nt.icon size={16} color={nt.color} />
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "var(--studio-700)",
-                  }}
-                >
-                  {nt.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, position: "relative" }} ref={reactFlowWrapper}>
-          <ReactFlow
-            nodes={nodes}
-            edges={styledEdges}
-            nodeTypes={customNodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onInit={setReactFlowInstance}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onSelectionChange={onSelectionChange}
-            onEdgeClick={(_, edge) =>
-              setSelectedEdge(edges.find((e) => e.id === edge.id) || edge)
-            }
-            fitView
-            attributionPosition="bottom-right"
-          >
-            <Controls />
-            <MiniMap
-              style={{
-                border: "1px solid var(--studio-200)",
-                borderRadius: "8px",
-              }}
-            />
-            <Background color="var(--studio-300)" gap={16} />
-          </ReactFlow>
-        </div>
-
-        {showCopilot && (
-          <AiCopilotSidebar
-            type="workflow"
-            componentId={currentId}
-            onSuggestSteps={(steps) => {
-              const newNodes = steps.map((s, idx) => ({
-                id: `node_ai_${Date.now()}_${idx}`,
-                type: "custom",
-                position: { x: 250, y: 150 + idx * 120 },
-                data: {
-                  label: s.label || "Approval Step",
-                  nodeType: "approval",
-                  config: { assignRole: s.assigneeRole || "Manager" },
+              testRun={{ onAction: handleTestRun, busy: isExecuting }}
+              version_={{
+                onAction: () => {
+                  setSelectedRun(null);
+                  setRunSteps([]);
+                  setInspectingRun(null);
+                  fetchExecutions();
+                  setIsHistoryModalOpen(true);
                 },
-              }));
-              setNodes([...nodes, ...newNodes]);
-            }}
-          />
-        )}
-
-        <div
-          style={{
-            width: "300px",
-            background: "white",
-            borderLeft: "1px solid var(--studio-200)",
-            display: "flex",
-            flexDirection: "column",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              padding: "16px",
-              borderBottom: "1px solid var(--studio-200)",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <Settings size={16} color="var(--studio-500)" />
-            <span style={{ fontSize: "14px", fontWeight: 600 }}>
-              Properties
-            </span>
-          </div>
-          <div style={{ padding: "16px", overflowY: "auto", flex: 1 }}>
-            {selectedEdge ? (
+              }}
+              publish={{
+                onAction: () => {
+                  setValidated(true);
+                  setShowPublish(true);
+                },
+                busy: isSaving,
+              }}
+            />
+          }
+          palette={
+            <StudioPalette
+              groups={paletteGroups}
+              onInsert={(item) => addNodeFromPalette(item.id, item.label)}
+              searchPlaceholder="Search node types…"
+              label="Node types"
+            />
+          }
+          canvas={
+            <StudioCanvas
+              label={`${artefactName} flow`}
+              variant="spatial"
+              isEmpty={false}
+            >
+              <div
+                style={{ blockSize: "100%", position: "relative" }}
+                ref={reactFlowWrapper}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+              >
+                <ReactFlow
+                  nodes={nodes}
+                  edges={styledEdges}
+                  nodeTypes={customNodeTypes}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onInit={setReactFlowInstance}
+                  onSelectionChange={onSelectionChange}
+                  onEdgeClick={(_, edge) =>
+                    setSelectedEdge(edges.find((e) => e.id === edge.id) || edge)
+                  }
+                  fitView
+                  attributionPosition="bottom-right"
+                >
+                  <Controls />
+                  <MiniMap
+                    style={{
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Background color="var(--color-border)" gap={16} />
+                </ReactFlow>
+              </div>
+            </StudioCanvas>
+          }
+          inspector={
+            showCopilot ? (
+              <AiCopilotSidebar
+                type="workflow"
+                componentId={currentId}
+                onSuggestSteps={(steps) => {
+                  const newNodes = steps.map((s: any, idx: number) => ({
+                    id: `node_ai_${Date.now()}_${idx}`,
+                    type: "custom",
+                    position: { x: 250, y: 150 + idx * 120 },
+                    data: {
+                      label: s.label || "Approval Step",
+                      nodeType: "approval",
+                      config: { assignRole: s.assigneeRole || "Manager" },
+                    },
+                  }));
+                  setNodes([...nodes, ...newNodes]);
+                }}
+              />
+            ) : (
+              <StudioInspector
+                subject={
+                  selectedEdge
+                    ? "Connection"
+                    : selectedNode
+                      ? String(selectedNode.data?.label ?? "Step")
+                      : undefined
+                }
+                properties={
+            selectedEdge ? (
               <div
                 style={{
                   display: "flex",
@@ -1617,9 +1621,44 @@ function WorkflowEditorInner({
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      </div>
+              />
+            )
+          }
+          console={
+            <StudioConsole
+              problems={problems}
+              onLocate={(id) => {
+                const node = nodes.find((n) => n.id === id);
+                if (node) {
+                  setSelectedNode(node);
+                  setSelectedEdge(null);
+                }
+              }}
+              defaultOpen={errorCount > 0}
+            />
+          }
+        />
+      </StudioRouteFrame>
+
+      <PublishDiffDialog
+        open={showPublish}
+        onClose={() => setShowPublish(false)}
+        name={artefactName}
+        environment="production"
+        rollbackTo={currentId === "new" ? undefined : `the live #${currentId}`}
+        changes={changes}
+        publishing={isSaving}
+        onPublish={() => {
+          void handleSave().then(() => setShowPublish(false));
+        }}
+      >
+        {errorCount > 0 ? (
+          <p role="alert" style={{ color: "var(--studio-danger-text)" }}>
+            {errorCount} error{errorCount === 1 ? "" : "s"} must be fixed first —
+            see the console.
+          </p>
+        ) : null}
+      </PublishDiffDialog>
 
       {isHistoryModalOpen && (
         <div
@@ -2150,7 +2189,8 @@ function WorkflowEditorInner({
           </div>
         </div>
       )}
-    </div>
+
+    </>
   );
 }
 
