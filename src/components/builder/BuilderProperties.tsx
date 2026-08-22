@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useBuilderStore } from "@/stores/builderStore";
 import {
   Settings,
@@ -106,6 +106,17 @@ export function BuilderProperties() {
   } = useBuilderStore();
   const webhooks = formSettings?.webhooks || [];
   const scripts = formSettings?.scripts || [];
+  const [dataObjects, setDataObjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [dataObjectsError, setDataObjectsError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    const token = localStorage.getItem("token") || "";
+    fetch("/api/v1/library?type=DATA_OBJECT", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then(async (response) => { if (!response.ok) throw new Error("Data Objects could not be loaded"); return response.json(); })
+      .then((rows) => { if (active) setDataObjects(Array.isArray(rows) ? rows.map((row) => ({ id: String(row.id), name: String(row.name ?? row.slug ?? row.id) })) : []); })
+      .catch((reason) => { if (active) setDataObjectsError(reason instanceof Error ? reason.message : "Data Objects could not be loaded"); });
+    return () => { active = false; };
+  }, []);
 
   const selectedField = fields.find((f) => f.id === selectedFieldId);
   const generateName = (label: string) =>
@@ -171,6 +182,16 @@ export function BuilderProperties() {
         </div>
 
         <div style={{ overflowY: "auto", flex: 1 }}>
+          <AccordionSection title="Data binding" icon={Database} defaultOpen={true}>
+            <DarkInput label="Submit to Data Object" description="Creates a typed, tenant-isolated record through the pinned preview or release composition.">
+              <select aria-label="Submit to Data Object" style={inputStyle} value={formSettings.submitTargetArtifactId ?? ""} onChange={(event) => updateFormSettings({ submitTargetArtifactId: event.target.value || undefined })}>
+                <option value="">No persistent submission</option>
+                {dataObjects.map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+              </select>
+            </DarkInput>
+            {dataObjectsError && <p style={{ margin: 0, color: "var(--studio-danger-bright)", fontSize: "11px" }}>{dataObjectsError}</p>}
+            {formSettings.submitTargetArtifactId && <p style={{ margin: 0, color: "var(--studio-400)", fontSize: "11px" }}>Form field names map to matching Data Object field names. Mismatches fail validation before persistence.</p>}
+          </AccordionSection>
           <AccordionSection title="Webhooks" icon={Activity} defaultOpen={true}>
             {(webhooks || []).map((wh, idx) => (
               <div

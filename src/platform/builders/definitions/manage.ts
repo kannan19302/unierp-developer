@@ -23,6 +23,19 @@ import { registerBuilder } from "../registry";
 const READ = { read: ["builder.read"], write: ["builder.write"] };
 
 registerBuilder({
+  kind: "settings",
+  id: "manage-developer-governance",
+  label: "Developer Governance",
+  icon: "Shield",
+  segment: "developer-governance",
+  scopes: ["manage"],
+  permissions: { read: ["builder.manage"], write: ["builder.manage"] },
+  status: "ga",
+  description: "Capacity limits and durable developer workload evidence.",
+  listView: lazy(() => import("@/app/builder/manage/developer-governance/page")),
+});
+
+registerBuilder({
   kind: "data",
   id: "manage-releases",
   label: "Releases",

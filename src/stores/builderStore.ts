@@ -71,6 +71,8 @@ interface BuilderState {
   formSettings: {
     webhooks: { url: string; event: string; method: string }[];
     scripts: { code: string; event: string }[];
+    submitTargetArtifactId?: string;
+    submitFieldMap?: Record<string, string>;
   };
 
   // Undo / Redo
@@ -118,7 +120,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   conditions: [],
   selectedFieldId: null,
   previewMode: false,
-  formSettings: { webhooks: [], scripts: [] },
+  formSettings: { webhooks: [], scripts: [], submitFieldMap: {} },
   history: [],
   historyIndex: -1,
 

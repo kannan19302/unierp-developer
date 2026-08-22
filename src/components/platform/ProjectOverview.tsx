@@ -32,6 +32,7 @@ import { ArrowUpRight, Plus } from "lucide-react";
 import { useAsyncData } from "@/platform/data/useAsyncData";
 import {
   listProjectArtifacts,
+  listProjectInstallations,
   type ArtifactSummary,
   type ProjectSummary,
 } from "@/platform/data/projects";
@@ -45,6 +46,13 @@ import { permits } from "@/platform/permissions";
 import { usePermissions } from "@kannan19302/shared/auth-client/react";
 import { relativeTime } from "./relative-time";
 import styles from "./project-overview.module.css";
+import { ProjectReleasePanel } from "./ProjectReleasePanel";
+import { ProjectEnvironmentBindings } from "./ProjectEnvironmentBindings";
+import { ProjectTestPanel } from "./ProjectTestPanel";
+import { ProjectSourcePanel } from "./ProjectSourcePanel";
+import { ProjectPreviewPanel } from "./ProjectPreviewPanel";
+import { ProjectAuditPanel } from "./ProjectAuditPanel";
+import { ProjectChangeSetsPanel } from "./ProjectChangeSetsPanel";
 
 export interface ProjectOverviewProps {
   project: ProjectSummary;
@@ -56,6 +64,10 @@ export function ProjectOverview({ project, scope }: ProjectOverviewProps) {
   const { permissions } = usePermissions();
   const artifacts = useAsyncData(
     () => listProjectArtifacts(client, project.id),
+    [project.id],
+  );
+  const installations = useAsyncData(
+    () => listProjectInstallations(client, project.id),
     [project.id],
   );
 
@@ -139,6 +151,62 @@ export function ProjectOverview({ project, scope }: ProjectOverviewProps) {
           </div>
         </div>
       </div>
+
+      <section className={styles.section}>
+        <h2 className={styles.section_title}>Installed packages</h2>
+        <p className={styles.section_hint}>
+          Immutable Library versions composed into this {scope}.
+        </p>
+        {installations.loading ? (
+          <div className={styles.empty}>Loading installations…</div>
+        ) : installations.error ? (
+          <div className={styles.empty}>
+            Could not load installations: {installations.error.message}
+          </div>
+        ) : (installations.data ?? []).length === 0 ? (
+          <div className={styles.empty}>
+            No packages installed. Browse the Library to add a compatible signed version.
+            <div style={{ marginTop: "var(--space-3)" }}>
+              <Link href="/library">
+                <Button variant="secondary" size="sm" leftIcon={<ArrowUpRight size={14} />}>
+                  Add from Library
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.changes}>
+            {(installations.data ?? []).map((installation) => (
+              <div key={installation.id} className={styles.change}>
+                <div className={styles.change_main}>
+                  <span className={styles.change_name}>{installation.package.name}</span>
+                  <span className={styles.change_when}>{installation.package.namespace}</span>
+                </div>
+                <span className={`${styles.origin} ${styles.origin_attached}`}>
+                  {installation.mode.toLowerCase()}
+                </span>
+                <span className={styles.change_when}>
+                  v{installation.packageVersion.version}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <ProjectReleasePanel projectId={project.id} />
+
+      <ProjectEnvironmentBindings projectId={project.id} />
+
+      <ProjectTestPanel projectId={project.id} />
+
+      <ProjectSourcePanel projectId={project.id} />
+
+      <ProjectChangeSetsPanel projectId={project.id} />
+
+      <ProjectPreviewPanel projectId={project.id} />
+
+      <ProjectAuditPanel projectId={project.id} />
 
       <section className={styles.section}>
         <h2 className={styles.section_title}>Builders</h2>
