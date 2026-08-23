@@ -110,8 +110,7 @@ export function BuilderProperties() {
   const [dataObjectsError, setDataObjectsError] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    const token = localStorage.getItem("token") || "";
-    fetch("/api/v1/library?type=DATA_OBJECT", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    fetch("/api/v1/library?type=DATA_OBJECT", { credentials: "include" })
       .then(async (response) => { if (!response.ok) throw new Error("Data Objects could not be loaded"); return response.json(); })
       .then((rows) => { if (active) setDataObjects(Array.isArray(rows) ? rows.map((row) => ({ id: String(row.id), name: String(row.name ?? row.slug ?? row.id) })) : []); })
       .catch((reason) => { if (active) setDataObjectsError(reason instanceof Error ? reason.message : "Data Objects could not be loaded"); });

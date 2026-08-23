@@ -24,9 +24,7 @@ export function AiCopilotSidebar({
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const endpoint =
+    try {      const endpoint =
         type === "form"
           ? `/api/v1/builder/components/${componentId}/generate`
           : `/api/v1/builder/components/${componentId}/generate`; // Shares suggestion endpoint

@@ -50,10 +50,8 @@ export function useResolvedNav(
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch("/api/v1/builder/page-registries", {
-          headers: { Authorization: `Bearer ${token}` },
+      try {        const res = await fetch("/api/v1/builder/page-registries", {
+          credentials: "include",
         });
         if (res.ok) {
           const pages = await res.json();
@@ -84,10 +82,8 @@ export function useResolvedNav(
       return;
     }
     const load = async () => {
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch(`/api/v1/builder/nav-overlay/${activeModule}`, {
-          headers: { Authorization: `Bearer ${token}` },
+      try {        const res = await fetch(`/api/v1/builder/nav-overlay/${activeModule}`, {
+          credentials: "include",
         });
         if (isMounted) setOverlay(res.ok ? await res.json() : null);
       } catch {

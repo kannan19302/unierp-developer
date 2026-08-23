@@ -176,10 +176,8 @@ export function FormBuilderWorkspace({
         return;
       }
 
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch(`/api/v1/builder/forms/${formId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+      try {        const res = await fetch(`/api/v1/builder/forms/${formId}`, {
+          credentials: "include",
         });
         if (!isMounted) return;
         if (res.ok) {
@@ -219,14 +217,10 @@ export function FormBuilderWorkspace({
         if (isMounted) showToast("Network error loading form.", "error");
       }
 
-      try {
-        const token = localStorage.getItem("token") || "";
-        fetch("/api/v1/builder/analytics", {
+      try {        fetch("/api/v1/builder/analytics", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",          },
           body: JSON.stringify({
             event: "canvas_opened",
             entityType: "FORM",
@@ -251,9 +245,7 @@ export function FormBuilderWorkspace({
   const handleSave = useCallback(
     async (publish = false) => {
       setIsSaving(true);
-      try {
-        const token = localStorage.getItem("token") || "";
-        const formSettings = useBuilderStore.getState().formSettings;
+      try {        const formSettings = useBuilderStore.getState().formSettings;
         const isNew = currentId === "new";
         const slug =
           deploySettings.slug || (isNew ? `custom-${Date.now()}` : currentId);
@@ -276,9 +268,7 @@ export function FormBuilderWorkspace({
           {
             method: isNew ? "POST" : "PATCH",
             headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+              "Content-Type": "application/json",            },
             body: JSON.stringify(payload),
           },
         );
@@ -500,7 +490,7 @@ export function FormBuilderWorkspace({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        ,
       },
       body: JSON.stringify({ prompt }),
     })

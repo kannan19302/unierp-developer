@@ -265,10 +265,8 @@ function WorkflowEditorInner({
         setLoading(false);
         return;
       }
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch(`/api/v1/builder/workflows/${currentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+      try {        const res = await fetch(`/api/v1/builder/workflows/${currentId}`, {
+          credentials: "include",
         });
         if (!isMounted) return;
         if (res.ok) {
@@ -413,9 +411,7 @@ function WorkflowEditorInner({
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const isNew = currentId === "new";
+    try {      const isNew = currentId === "new";
       const name = workflow?.name || defaultName || "Untitled";
       const payload = { nodes, edges, name };
       const res = await fetch(
@@ -423,9 +419,7 @@ function WorkflowEditorInner({
         {
           method: isNew ? "POST" : "PATCH",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",          },
           body: JSON.stringify(payload),
         },
       );
@@ -486,11 +480,9 @@ function WorkflowEditorInner({
 
   const fetchExecutions = async () => {
     if (currentId === "new") return;
-    try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(
+    try {      const res = await fetch(
         `/api/v1/builder/workflows/${currentId}/runs`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { credentials: "include" },
       );
       if (res.ok) setExecutions(await res.json());
     } catch {
@@ -502,11 +494,9 @@ function WorkflowEditorInner({
     if (currentId === "new") return;
     setInspectingRun(runId);
     setRunSteps([]);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(
+    try {      const res = await fetch(
         `/api/v1/builder/workflows/${currentId}/runs/${runId}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { credentials: "include" },
       );
       if (res.ok) {
         const data = await res.json();
@@ -521,16 +511,12 @@ function WorkflowEditorInner({
   const handleResumeRun = async (runId: string) => {
     if (currentId === "new") return;
     setRunActionLoading(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(
+    try {      const res = await fetch(
         `/api/v1/builder/workflows/${currentId}/runs/${runId}/resume`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",          },
           body: JSON.stringify({ input: {} }),
         },
       );
@@ -553,16 +539,12 @@ function WorkflowEditorInner({
   ) => {
     if (currentId === "new") return;
     setRunActionLoading(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(
+    try {      const res = await fetch(
         `/api/v1/builder/workflows/${currentId}/runs/${runId}/steps/${stepId}/approve`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",          },
           body: JSON.stringify({ approved }),
         },
       );
@@ -591,11 +573,9 @@ function WorkflowEditorInner({
       return;
     }
     setIsExecuting(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(
+    try {      const res = await fetch(
         `/api/v1/builder/workflows/${currentId}/execute`,
-        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+        { method: "POST", credentials: "include" },
       );
       if (res.ok) {
         showToast("Workflow triggered successfully", "success");

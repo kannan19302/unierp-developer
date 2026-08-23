@@ -27,11 +27,9 @@ function AsyncLinkSelect({
 
     async function fetchLinks() {
       setLoading(true);
-      try {
-        const token = localStorage.getItem("token") || "";
-        // 1. Fetch schema by slug to get schemaId
+      try {        // 1. Fetch schema by slug to get schemaId
         const schemaRes = await fetch(`/api/v1/builder/schema-registries`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
         if (!schemaRes.ok) throw new Error();
         const schemas = await schemaRes.json();
@@ -41,7 +39,7 @@ function AsyncLinkSelect({
         // 2. Fetch custom records for that schemaId
         const recordsRes = await fetch(
           `/api/v1/builder/custom-records/${schema.id}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          { credentials: "include" },
         );
         if (!recordsRes.ok) throw new Error();
         const records = await recordsRes.json();
@@ -134,7 +132,7 @@ export function DynamicFormRenderer({
             : `/api/v1/${f.dataSource}`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              ,
             },
           },
         )

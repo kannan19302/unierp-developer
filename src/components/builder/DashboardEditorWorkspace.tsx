@@ -180,10 +180,8 @@ export function DashboardEditorWorkspace({
         setLoading(false);
         return;
       }
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch(`/api/v1/builder/dashboards/${currentId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+      try {        const res = await fetch(`/api/v1/builder/dashboards/${currentId}`, {
+          credentials: "include",
         });
         if (!isMounted) return;
         if (res.ok) {
@@ -233,9 +231,7 @@ export function DashboardEditorWorkspace({
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-      const isNew = currentId === "new";
+    try {      const isNew = currentId === "new";
       const name = dashboard?.name || defaultName || "New Dashboard";
       const payload = { name, layout, widgets };
       const res = await fetch(
@@ -243,9 +239,7 @@ export function DashboardEditorWorkspace({
         {
           method: isNew ? "POST" : "PATCH",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",          },
           body: JSON.stringify(payload),
         },
       );

@@ -64,10 +64,8 @@ export function DeployFormModal({
     if (!isOpen) return;
     let isMounted = true;
     async function loadModules() {
-      try {
-        const token = localStorage.getItem("token") || "";
-        const res = await fetch("/api/v1/builder/page-registries", {
-          headers: { Authorization: `Bearer ${token}` },
+      try {        const res = await fetch("/api/v1/builder/page-registries", {
+          credentials: "include",
         });
         if (!isMounted || !res.ok) return;
         const pages = await res.json();
@@ -109,10 +107,7 @@ export function DeployFormModal({
   const handleDeploy = useCallback(async () => {
     if (!isValid || !pageId) return;
     setIsDeploying(true);
-    try {
-      const token = localStorage.getItem("token") || "";
-
-      // Step 1: save the BuilderForm with real module/slug/name
+    try {      // Step 1: save the BuilderForm with real module/slug/name
       const savePayload = {
         module: moduleValue,
         slug: slugValue,
@@ -123,9 +118,7 @@ export function DeployFormModal({
       const saveRes = await fetch(`/api/v1/builder/forms/${pageId}`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type": "application/json",        },
         body: JSON.stringify(savePayload),
       });
 
@@ -139,9 +132,7 @@ export function DeployFormModal({
       // Step 2: publish — creates/links the backing SchemaRegistry & PageRegistry
       const pubRes = await fetch(`/api/v1/builder/forms/${pageId}/publish`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: {        },
       });
 
       if (!pubRes.ok) {

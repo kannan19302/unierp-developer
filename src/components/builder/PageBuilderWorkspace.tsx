@@ -202,15 +202,12 @@ export function PageBuilderWorkspace({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("token") || "";
       const res = await fetch(
         `/api/v1/builder/modules/${appId}/pages/${pageId}`,
         {
           method: "PATCH",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+            "Content-Type": "application/json",          },
           body: JSON.stringify({ layout: widgets }),
         },
       );

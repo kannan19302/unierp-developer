@@ -88,20 +88,17 @@ export function CollectionBlock(props: CollectionBlockProps) {
     (async () => {
       setLoading(true);
       setError("");
-      try {
-        const token =
-          typeof window !== "undefined" ? localStorage.getItem("token") : "";
-        if (token) {
+      try {        if (token) {
           // Builder / dashboard context — authenticated, current tenant.
           const listRes = await fetch("/api/v1/builder/web-collections", {
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
           });
           const cols = listRes.ok ? await listRes.json() : [];
           const col = (cols as any[]).find((c) => c.slug === collectionSlug);
           if (!col) throw new Error("Collection not found");
           const itemsRes = await fetch(
             `/api/v1/builder/web-collections/${col.id}/items?status=PUBLISHED&pageSize=100`,
-            { headers: { Authorization: `Bearer ${token}` } },
+            { credentials: "include" },
           );
           const d = itemsRes.ok ? await itemsRes.json() : { data: [] };
           if (active) {
