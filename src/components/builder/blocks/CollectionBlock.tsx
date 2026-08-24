@@ -88,7 +88,8 @@ export function CollectionBlock(props: CollectionBlockProps) {
     (async () => {
       setLoading(true);
       setError("");
-      try {        if (token) {
+      try {
+        if (!props.tenantSlug) {
           // Builder / dashboard context — authenticated, current tenant.
           const listRes = await fetch("/api/v1/builder/web-collections", {
             credentials: "include",

@@ -130,11 +130,7 @@ export function DynamicFormRenderer({
           f.dataSource.startsWith("/")
             ? f.dataSource
             : `/api/v1/${f.dataSource}`,
-          {
-            headers: {
-              ,
-            },
-          },
+          { credentials: "include" },
         )
           .then((res) => res.json())
           .then((data) => {

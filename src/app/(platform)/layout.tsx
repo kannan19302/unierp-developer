@@ -11,7 +11,8 @@
  */
 
 import { PlatformShell } from "@kannan19302/ui/shell";
-import { usePermissions, useSession } from "@kannan19302/shared/auth-client/react";
+import { usePermissions } from "@kannan19302/shared/auth-client/react";
+import { createOidcClient } from "@/lib/oidc-config";
 import { useShellIdentity } from "@/platform/providers/useShellIdentity";
 import { PlatformSidebar } from "@/platform/shell/PlatformSidebar";
 import { PlatformCommandPalette } from "@/platform/commands/PlatformCommandPalette";
@@ -23,14 +24,29 @@ export default function PlatformGroupLayout({
 }) {
   const { permissions } = usePermissions();
   const { user, tenant } = useShellIdentity();
-  const { signOut } = useSession();
 
   return (
     <PlatformShell
       platformName="Developer Platform"
       user={user}
       tenant={tenant}
-      onSignOut={() => signOut()}
+      platformWizardUrl="http://localhost:4000"
+      accountCenterUrl="http://localhost:3005/oidc/account"
+      environmentLabel="Local"
+      realmLabel="tenant"
+      onSignOut={async () => {
+        try {
+          await fetch("/api/session", {
+            method: "DELETE",
+            credentials: "include",
+            signal: AbortSignal.timeout(5_000),
+          });
+        } finally {
+          window.location.replace(
+            createOidcClient().buildLogoutUrl("http://localhost:4000/"),
+          );
+        }
+      }}
       sidebar={<PlatformSidebar permissions={permissions} />}
     >
       {children}
