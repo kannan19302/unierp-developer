@@ -5,20 +5,33 @@
   "providers": {
     "@kannan19302/framework": {
       "symbols": [
+        "ApiClient",
         "ApiRequestError",
+        "FrameworkProvider",
         "Guarded",
         "RouteGuard",
         "useApiClient"
       ],
       "namespaceImports": 0,
-      "consumingFiles": 41
+      "consumingFiles": 63
+    },
+    "@kannan19302/shared": {
+      "symbols": [
+        "hasPermission"
+      ],
+      "namespaceImports": 0,
+      "consumingFiles": 1
     },
     "@kannan19302/ui": {
       "symbols": [
+        "Alert",
+        "ArtifactAddress",
         "Badge",
         "Button",
         "Card",
         "Column",
+        "CommandItem",
+        "CommandPalette",
         "ConfirmDialog",
         "DataTable",
         "EmptyState",
@@ -27,11 +40,15 @@
         "FormField",
         "HeroBlock",
         "HowItWorksBlock",
+        "Input",
         "KPICard",
         "ListColumn",
         "ListPageTemplate",
         "Modal",
+        "PageEmptyState",
+        "PageErrorState",
         "PageHeader",
+        "PageLoadingState",
         "PricingBlock",
         "Select",
         "SocialProofBlock",
@@ -40,13 +57,15 @@
         "StatusBadge",
         "Tabs",
         "TextField",
+        "Textarea",
         "ThemeProvider",
         "ToastProvider",
         "TrustBarBlock",
+        "useCommandPalette",
         "useToast"
       ],
       "namespaceImports": 0,
-      "consumingFiles": 49
+      "consumingFiles": 79
     },
     "@kannan19302/ui/data-grid": {
       "symbols": [
@@ -57,12 +76,42 @@
     },
     "@kannan19302/ui/layout": {
       "symbols": [
-        "ModuleTab",
         "SubTab",
         "SubTabBar"
       ],
       "namespaceImports": 0,
-      "consumingFiles": 11
+      "consumingFiles": 5
+    },
+    "@kannan19302/ui/shell": {
+      "symbols": [
+        "PageErrorState",
+        "PageLoadingState",
+        "PlatformManifest",
+        "PlatformShell",
+        "ShellTenant",
+        "ShellUser",
+        "WorkspaceIdentity",
+        "WorkspaceShell",
+        "resolveManifestNav"
+      ],
+      "namespaceImports": 0,
+      "consumingFiles": 5
+    },
+    "@kannan19302/ui/studio": {
+      "symbols": [
+        "PaletteGroup",
+        "PublishChange",
+        "PublishDiffDialog",
+        "StudioCanvas",
+        "StudioConsole",
+        "StudioInspector",
+        "StudioPalette",
+        "StudioProblem",
+        "StudioShell",
+        "StudioToolbar"
+      ],
+      "namespaceImports": 0,
+      "consumingFiles": 4
     }
   }
 }
