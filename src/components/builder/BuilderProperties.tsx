@@ -945,7 +945,7 @@ export function BuilderProperties() {
               }
             />
           </DarkInput>
-          <div style={{ height: "12px" }}></div>
+          <div style={{ height: "var(--space-3)" }}></div>
           <DarkInput
             label="Allowed Write Roles"
             description="Comma-separated. Leave empty for all."
@@ -985,7 +985,7 @@ export function BuilderProperties() {
                 }
               />
             </DarkInput>
-            <div style={{ height: "12px" }}></div>
+            <div style={{ height: "var(--space-3)" }}></div>
             <DarkInput
               label="JSONPath / Filter"
               description="Path to map API response to options."

@@ -49,7 +49,7 @@ export default function DeveloperGovernancePage() {
       <h2 style={{ marginTop: 0 }}>Governor limits</h2>
       <p style={{ color: "var(--color-text-muted)" }}>Soft limits create an operational warning. Hard limits reject new work before capacity or cost becomes unsafe.</p>
       <div style={{ display: "grid", gap: "var(--space-3)" }}>
-        {dimensions.map(({ key, label, description }) => <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 120px 120px", gap: "var(--space-3)", alignItems: "center" }}>
+        {dimensions.map(({ key, label, description }) => <div key={key} style={{ display: "grid", gridTemplateColumns: "minmax(var(--size-control-min, 180px), 1fr) 7.5rem 7.5rem", gap: "var(--space-3)", alignItems: "center" }}>
           <div><strong>{label}</strong><div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>{description}</div></div>
           <label className="ui-form-group">Soft<input aria-label={`${label} soft limit`} className="ui-input" type="number" min="0" value={limits[key]?.soft ?? 0} onChange={(event) => update(key, "soft", event.target.value)} /></label>
           <label className="ui-form-group">Hard<input aria-label={`${label} hard limit`} className="ui-input" type="number" min="0" value={limits[key]?.hard ?? 0} onChange={(event) => update(key, "hard", event.target.value)} /></label>
@@ -59,7 +59,7 @@ export default function DeveloperGovernancePage() {
     <section className="ui-card" style={{ padding: "var(--space-4)" }}>
       <h2 style={{ marginTop: 0 }}>Workload evidence</h2>
       <p style={{ color: "var(--color-text-muted)" }}>Idempotent ledger totals; a worker retry never adds a second billable or capacity event.</p>
-      {loading ? <div>Loading workload evidence…</div> : usage.length === 0 ? <div>No developer workload has been recorded yet.</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-3)" }}>{usage.map((item) => <div key={item.metric} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" }}><strong>{item.metric === "DEVELOPER_PREVIEW_SESSION" ? "Preview sessions" : "Validation builds"}</strong><div style={{ fontSize: "var(--text-lg)", marginTop: "var(--space-1)" }}>{item.currentValue.toLocaleString()}</div><div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>Ledger events{item.updatedAt ? ` · updated ${new Date(item.updatedAt).toLocaleString()}` : ""}</div></div>)}</div>}
+      {loading ? <div>Loading workload evidence…</div> : usage.length === 0 ? <div>No developer workload has been recorded yet.</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(var(--size-card-min, 220px), 1fr))", gap: "var(--space-3)" }}>{usage.map((item) => <div key={item.metric} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-3)" }}><strong>{item.metric === "DEVELOPER_PREVIEW_SESSION" ? "Preview sessions" : "Validation builds"}</strong><div style={{ fontSize: "var(--text-lg)", marginTop: "var(--space-1)" }}>{item.currentValue.toLocaleString()}</div><div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>Ledger events{item.updatedAt ? ` · updated ${new Date(item.updatedAt).toLocaleString()}` : ""}</div></div>)}</div>}
     </section>
   </div>;
 }

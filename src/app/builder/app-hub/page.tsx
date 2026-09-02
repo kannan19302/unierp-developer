@@ -10,7 +10,7 @@ import {
   DataTable,
   type Column,
   Modal,
-  TextField,
+  Input,
   FormField,
   Select,
   KPICard,
@@ -228,7 +228,7 @@ export default function LowCodeBuilderHub() {
             }}
           >
             <FormField label="Display Name">
-              <TextField
+              <Input
                 value={form.displayName}
                 onChange={(e) =>
                   setForm({ ...form, displayName: e.target.value })
@@ -238,7 +238,7 @@ export default function LowCodeBuilderHub() {
               />
             </FormField>
             <FormField label="Model System Name">
-              <TextField
+              <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="EquipmentInspectionLog"
@@ -246,7 +246,7 @@ export default function LowCodeBuilderHub() {
               />
             </FormField>
             <FormField label="Database Table Name">
-              <TextField
+              <Input
                 value={form.tableName}
                 onChange={(e) =>
                   setForm({ ...form, tableName: e.target.value })

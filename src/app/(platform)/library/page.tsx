@@ -379,7 +379,7 @@ export default function LibraryBrowsePage() {
         ) : (packages.data ?? []).length === 0 ? (
           <PageEmptyState title="No published packages" description="Package validated Library revisions to make them installable." />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "var(--space-3)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(var(--size-card-min, 280px), 1fr))", gap: "var(--space-3)" }}>
             {(packages.data ?? []).map((pkg) => (
               <Card key={pkg.id} style={{ padding: "var(--space-4)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-2)" }}>

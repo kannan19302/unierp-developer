@@ -1,7 +1,10 @@
+import path from 'node:path';
+
 /** @type {import('next').NextConfig} */
 const apiBaseUrl = process.env.API_URL || 'http://localhost:3001';
 
 const nextConfig = {
+  outputFileTracingRoot: path.resolve(process.cwd(), '..'),
   reactStrictMode: true,
 
   // The developer platform had no Next config at all, so it inherited the
