@@ -86,11 +86,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${instrumentSans.variable} ${inter.variable} ${martianMono.variable}`}
-      data-theme="meridian"
+      data-theme="strata"
+      data-platform="developer"
       suppressHydrationWarning
     >
       <body>
-        <ThemeProvider defaultSetting="meridian">
+        <ThemeProvider defaultSetting="strata" defaultPlatform="developer">
           <AuthShell>
             <AppProviders>
               <ToastProvider>{children}</ToastProvider>
