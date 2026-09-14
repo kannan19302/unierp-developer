@@ -30,7 +30,7 @@ export default function PlatformGroupLayout({
       platformName="Developer Platform"
       user={user}
       tenant={tenant}
-      platformWizardUrl="http://localhost:4000"
+      platformWizardUrl="http://localhost:4003/home"
       accountCenterUrl="http://localhost:3005/oidc/account"
       environmentLabel="Local"
       realmLabel="tenant"
@@ -43,7 +43,7 @@ export default function PlatformGroupLayout({
           });
         } finally {
           window.location.replace(
-            createOidcClient().buildLogoutUrl("http://localhost:4000/"),
+            createOidcClient().buildLogoutUrl("http://localhost:4005/"),
           );
         }
       }}
