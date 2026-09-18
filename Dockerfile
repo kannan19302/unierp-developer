@@ -88,8 +88,8 @@ FROM localdeps AS dev
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=8192
-EXPOSE 4008
-CMD ["npx", "next", "dev", "-p", "4008", "-H", "0.0.0.0"]
+EXPOSE 4004
+CMD ["npx", "next", "dev", "-p", "4004", "-H", "0.0.0.0"]
 
 # ── build ───────────────────────────────────────────────────────────────────
 # FROM builder, not dev: the production artifact is built against the registry,
@@ -117,7 +117,7 @@ COPY --from=prod-builder /app/.next ./.next
 COPY --from=prod-builder /app/package.json ./package.json
 COPY --from=prod-builder /app/next.config.mjs ./next.config.mjs
 
-EXPOSE 4008
+EXPOSE 4004
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://localhost:4008/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["npx", "next", "start", "-p", "4008"]
+  CMD node -e "fetch('http://localhost:4004/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["npx", "next", "start", "-p", "4004"]

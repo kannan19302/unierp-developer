@@ -7,9 +7,9 @@
   },
   "private": true,
   "scripts": {
-    "dev": "next dev -p 4008",
+    "dev": "next dev -p 4004",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 4004",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "check:nav": "tsx scripts/check-nav-registry.ts",
