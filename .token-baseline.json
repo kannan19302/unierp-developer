@@ -1,7 +1,7 @@
 {
   "_comment": "Pre-existing token violations, recorded so the gate can be adopted without a mass rewrite. The gate fails on any NEW violation and on any file here that gets worse. These numbers may only go down. Delete an entry when its file reaches zero.",
   "_generated": "2026-08-21",
-  "_total": 819,
+  "_total": 1686,
   "files": {
     "src/app/builder/app-hub/page.tsx": 10,
     "src/app/builder/erp/advanced-forms/page.module.css": 9,
@@ -87,6 +87,27 @@
     "src/components/platform/project-overview.module.css": 3,
     "src/components/site/SiteChatWidget.tsx": 13,
     "src/components/site/TenantHeaderFooter.tsx": 42,
-    "src/components/site/TenantStarterHome.tsx": 36
+    "src/components/site/TenantStarterHome.tsx": 36,
+    "marketplace/app/(dashboard)/apps/developer/page.module.css": 8,
+    "marketplace/app/(dashboard)/apps/page.module.css": 26,
+    "marketplace/app/(dashboard)/apps/store/collections/page.module.css": 8,
+    "marketplace/app/(dashboard)/apps/store/collections/[slug]/page.module.css": 6,
+    "marketplace/app/(dashboard)/apps/store/favorites/page.module.css": 7,
+    "marketplace/app/(dashboard)/apps/store/page.module.css": 13,
+    "marketplace/app/(dashboard)/apps/store/[slug]/page.module.css": 19,
+    "marketplace/app/(dashboard)/apps/store/[slug]/page.tsx": 1,
+    "marketplace/app/(dashboard)/connect/Calendar.module.css": 115,
+    "marketplace/app/(dashboard)/connect/Calendar.tsx": 20,
+    "marketplace/app/(dashboard)/connect/page.module.css": 341,
+    "marketplace/app/(dashboard)/connect/page.tsx": 80,
+    "marketplace/app/(dashboard)/connect/settings/page.module.css": 3,
+    "marketplace/app/categories/page.tsx": 24,
+    "marketplace/app/connectors/page.tsx": 22,
+    "marketplace/app/data/apps-catalog.ts": 26,
+    "marketplace/app/discover/page.tsx": 21,
+    "marketplace/app/favourites/page.tsx": 2,
+    "marketplace/app/installed/page.tsx": 19,
+    "marketplace/app/page.tsx": 91,
+    "marketplace/app/updates/page.tsx": 15
   }
 }

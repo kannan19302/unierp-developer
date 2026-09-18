@@ -12,8 +12,10 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
     "jsx": "preserve"
   },
-  "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

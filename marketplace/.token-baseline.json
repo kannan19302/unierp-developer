@@ -1,0 +1,28 @@
+{
+  "_comment": "Pre-existing token violations, recorded so the gate can be adopted without a mass rewrite. The gate fails on any NEW violation and on any file here that gets worse. These numbers may only go down. Delete an entry when its file reaches zero.",
+  "_generated": "2026-08-21",
+  "_total": 867,
+  "files": {
+    "app/(dashboard)/apps/developer/page.module.css": 8,
+    "app/(dashboard)/apps/page.module.css": 26,
+    "app/(dashboard)/apps/store/collections/page.module.css": 8,
+    "app/(dashboard)/apps/store/collections/[slug]/page.module.css": 6,
+    "app/(dashboard)/apps/store/favorites/page.module.css": 7,
+    "app/(dashboard)/apps/store/page.module.css": 13,
+    "app/(dashboard)/apps/store/[slug]/page.module.css": 19,
+    "app/(dashboard)/apps/store/[slug]/page.tsx": 1,
+    "app/(dashboard)/connect/Calendar.module.css": 115,
+    "app/(dashboard)/connect/Calendar.tsx": 20,
+    "app/(dashboard)/connect/page.module.css": 341,
+    "app/(dashboard)/connect/page.tsx": 80,
+    "app/(dashboard)/connect/settings/page.module.css": 3,
+    "app/categories/page.tsx": 24,
+    "app/connectors/page.tsx": 22,
+    "app/data/apps-catalog.ts": 26,
+    "app/discover/page.tsx": 21,
+    "app/favourites/page.tsx": 2,
+    "app/installed/page.tsx": 19,
+    "app/page.tsx": 91,
+    "app/updates/page.tsx": 15
+  }
+}

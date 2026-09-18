@@ -42,12 +42,3 @@ scratch/
 
 # Storybook
 storybook-static/
-
-# Repository-specific
-.env.local
-
-**/node_modules
-**/.next
-**/dist
-**/.turbo
-**/coverage

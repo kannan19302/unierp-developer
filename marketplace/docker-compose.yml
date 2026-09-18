@@ -1,0 +1,28 @@
+services:
+  marketplace:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: marketplace
+    restart: unless-stopped
+    ports:
+      - "4007:4007"
+    environment:
+      PORT: "4007"
+      NODE_ENV: development
+      API_URL: ${API_URL:-http://localhost:3001}
+      IDP_URL: ${IDP_URL:-http://localhost:3005}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-super_secret_local_dev_key_only_12345}
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    volumes:
+      - ./app:/app/app
+      - ./src:/app/src
+      - ./public:/app/public
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4007/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      start_period: 25s
+      retries: 3
