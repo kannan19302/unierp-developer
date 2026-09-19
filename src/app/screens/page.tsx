@@ -11,7 +11,7 @@ export default function ScreensIndexPage() {
   }, [router]);
 
   return (
-    <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>
+    <div style={{ padding: 40, textAlign: "center", color: "var(--color-text-muted)" }}>
       Redirecting to Screen DP-001...
     </div>
   );

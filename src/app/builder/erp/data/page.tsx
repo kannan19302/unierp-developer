@@ -131,10 +131,10 @@ export default function DataImportPage() {
       FAILED: { bg: "var(--color-danger-light)", color: "var(--color-danger)" },
       IMPORTING: { bg: "#3b82f620", color: "var(--color-primary)" },
       VALIDATING: { bg: "#f59e0b20", color: "var(--chart-3)" },
-      PENDING: { bg: "#64748b20", color: "var(--color-text-secondary)" },
+      PENDING: { bg: "var(--color-text-muted)20", color: "var(--color-text-secondary)" },
     };
     const c = colors[status] || {
-      bg: "#64748b20",
+      bg: "var(--color-text-muted)20",
       color: "var(--color-text-secondary)",
     };
     return (

@@ -18,7 +18,6 @@ export const platformManifest: PlatformManifest = {
   platformName: "Developer Platform",
   nav: [
     { key: "home", label: "Home", href: "/", icon: "Home" },
-    { key: "screens", label: "108 Screens", href: "/screens/DP-001", icon: "Layers" },
     { key: "apps", label: "Apps", href: "/apps", icon: "LayoutGrid" },
     { key: "sites", label: "Sites", href: "/sites", icon: "Globe" },
     { key: "library", label: "Library", href: "/library", icon: "Package" },
