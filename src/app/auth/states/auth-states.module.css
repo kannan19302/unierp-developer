@@ -1,0 +1,393 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   auth-states.module.css — DP-001 (001_auth_states.png)
+   Strictly tokenized Strata DL 2.0 styles (Zero literal px > 2px).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.pageHead {
+  margin-bottom: var(--space-8);
+}
+
+.title {
+  font-family: var(--font-display, var(--font-sans));
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary, #475569);
+  margin: 0;
+  max-width: 80ch;
+}
+
+/* ── 3-Card Flow Grid ─────────────────────────────────────────────────────── */
+.flowGrid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  gap: var(--space-4);
+  margin-bottom: var(--space-10);
+}
+
+@media (max-width: 1200px) {
+  .flowGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .flowArrow {
+    transform: rotate(90deg);
+    margin: var(--space-2) auto;
+  }
+}
+
+.flowArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted, #94a3b8);
+  padding: var(--space-2);
+}
+
+/* ── State Card ───────────────────────────────────────────────────────────── */
+.stateCard {
+  background-color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.stateCard:hover {
+  border-color: var(--color-border-strong, #cbd5e1);
+  transform: translateY(-2px);
+  box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.05);
+}
+
+.stateCardActive {
+  border-color: var(--color-primary, #174eca);
+  box-shadow: 0 0 0 2px var(--color-primary-subtle, #eff6ff), 0 0.25rem 0.75rem rgba(23, 78, 202, 0.1);
+}
+
+.stateCardActiveError {
+  border-color: var(--color-danger, #dc2626);
+  box-shadow: 0 0 0 2px var(--color-danger-subtle, #fef2f2), 0 0.25rem 0.75rem rgba(220, 38, 38, 0.1);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.headerLead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.numberCircle {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary, #174eca);
+  color: var(--color-text-inverse, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.numberCircleError {
+  background-color: var(--color-danger, #dc2626);
+}
+
+.cardTitle {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.badgeInProgress {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background-color: var(--color-primary-subtle, #eff6ff);
+  color: var(--color-primary, #174eca);
+  border-radius: var(--radius-full);
+}
+
+.badgeError {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background-color: var(--color-danger-subtle, #fef2f2);
+  color: var(--color-danger, #dc2626);
+  border-radius: var(--radius-full);
+}
+
+/* ── Section Blocks ───────────────────────────────────────────────────────── */
+.sectionBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.sectionLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.purposeText {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary, #475569);
+  line-height: 1.5;
+}
+
+/* ── What the User Sees Preview Box ───────────────────────────────────────── */
+.previewBox {
+  background-color: var(--color-surface-subtle, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+}
+
+.standaloneAuthWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--color-bg-canvas, #f8fafc);
+  padding: var(--space-4);
+}
+
+.standaloneAuthCard {
+  max-width: 24rem;
+  width: 100%;
+  padding: var(--space-8) var(--space-6);
+  background-color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0.625rem 1.5625rem -0.3125rem rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+}
+
+.previewIcon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-subtle, #eff6ff);
+  color: var(--color-primary, #174eca);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.previewIconError {
+  background-color: var(--color-danger-subtle, #fef2f2);
+  color: var(--color-danger, #dc2626);
+  border-radius: var(--radius-full);
+}
+
+.previewBrand {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+}
+
+.previewStatus {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary, #475569);
+}
+
+.previewStatusError {
+  color: var(--color-danger, #dc2626);
+  font-weight: 600;
+}
+
+.dotsStepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  margin: var(--space-1) 0;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-border, #cbd5e1);
+}
+
+.dotActive {
+  background-color: var(--color-primary, #174eca);
+}
+
+.progressTrack {
+  width: 8.75rem;
+  height: 0.25rem;
+  background-color: var(--color-border, #e2e8f0);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: var(--space-1-5) 0;
+}
+
+.progressBar {
+  width: 65%;
+  height: 100%;
+  background-color: var(--color-primary, #174eca);
+  border-radius: 2px;
+  animation: pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scaleX(0.3); transform-origin: left; }
+  50% { transform: scaleX(0.9); transform-origin: left; }
+  100% { transform: scaleX(0.3); transform-origin: left; }
+}
+
+.previewText {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #94a3b8);
+  white-space: pre-line;
+}
+
+.referenceCode {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  padding: 1px var(--space-1-5);
+  background-color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary, #475569);
+}
+
+.previewActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.previewBtnPrimary {
+  padding: var(--space-1) var(--space-2-5);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background-color: var(--color-primary, #174eca);
+  color: var(--color-text-inverse, #ffffff);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.previewBtnSecondary {
+  padding: var(--space-1) var(--space-2-5);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background-color: var(--color-surface, #ffffff);
+  color: var(--color-text, #0f172a);
+  border: 1px solid var(--color-border, #cbd5e1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+/* ── System Actions List ──────────────────────────────────────────────────── */
+.actionsList {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary, #475569);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  line-height: 1.5;
+}
+
+/* ── Transitions Footer ───────────────────────────────────────────────────── */
+.cardFooter {
+  border-top: 1px solid var(--color-border-subtle, #f1f5f9);
+  padding-top: var(--space-3);
+  margin-top: auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary, #475569);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.linkButton {
+  color: var(--color-primary, #174eca);
+  font-weight: 600;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  cursor: pointer;
+  display: inline;
+  text-align: left;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+/* ── Simulation Panel ─────────────────────────────────────────────────────── */
+.simulationPanel {
+  background-color: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.panelTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 var(--space-2);
+}
+
+.panelDesc {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary, #475569);
+  margin: 0 0 var(--space-4);
+}
+
+.diagramBox {
+  background-color: var(--color-surface-subtle, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  overflow-x: auto;
+}
