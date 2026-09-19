@@ -13,8 +13,6 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "check:nav": "tsx scripts/check-nav-registry.ts",
-    "test": "tsx scripts/test-screens.ts",
-    "test:screens": "tsx scripts/test-screens.ts",
     "test:e2e": "tsx scripts/test-e2e.ts",
     "check:tokens": "node node_modules/@kannan19302/ui/scripts/check-tokens.mjs ."
   },
