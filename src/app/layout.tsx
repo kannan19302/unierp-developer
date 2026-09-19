@@ -8,9 +8,9 @@ import "@kannan19302/ui/styles";
 // `./styles.css`, and globals.css never imports its sibling. Importing only
 // the first is why every module-styled component in this app rendered
 // unstyled — Card had no hover, the shell would have had no rails.
-// provider-admin-os/app/layout.tsx has imported both since it was written.
 import "@kannan19302/ui/styles.css";
-import { ThemeProvider, ToastProvider } from "@kannan19302/ui";
+import { ThemeProvider } from "@kannan19302/ui/theme";
+import { ToastProvider } from "@kannan19302/ui/notifications";
 import { AuthShell } from "@/components/AuthShell";
 import { AppProviders } from "@/platform/providers/AppProviders";
 
